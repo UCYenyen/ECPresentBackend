@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken"
 import { UserJWTPayload } from "../models/user-model"
 import { StringValue } from "ms"
-import { JWT_SECRET_KEY } from "./env-utils"
+import { JWT_SECRET_KEY } from "./env-util"
 
 export const generateToken = (
     payload: UserJWTPayload,
