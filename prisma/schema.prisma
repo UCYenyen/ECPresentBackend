@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -15,11 +9,70 @@ datasource db {
 }
 
 model User {
+  id            Int            @id @default(autoincrement())
+  username      String
+  email         String         @unique
+  password      String
+  image_url     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relasi: Satu User punya banyak Presentation
+  presentations Presentation[]
+}
+
+model Presentation {
   id        Int      @id @default(autoincrement())
-  username  String   
-  email     String   @unique
-  password  String
-  image_url String?
+  userId    Int      // Foreign Key
+  video_url String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Relasi ke User
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Relasi: Satu Presentation punya banyak QnA
+  qnas      Qna[]
+  
+  // Relasi: Satu Presentation punya satu Feedback (One-to-One atau One-to-Many)
+  feedbacks Feedbacks[] 
+}
+
+model Feedbacks {
+  id             Int          @id @default(autoincrement())
+  presentationId Int          // Foreign Key (Saya ganti dari chat_id String biar relasi jalan)
+  expression     String       // Sesuai diagram (sebelumnya experience)
+  intonation     Int          // Sesuai diagram (sebelumnya intonsity)
+  gesture        String
+  overall_rating Float
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relasi ke Presentation
+  presentation   Presentation @relation(fields: [presentationId], references: [id])
+}
+
+model Qna {
+  id             Int          @id @default(autoincrement())
+  presentationId Int          // Foreign Key
+  question       String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  // Relasi ke Presentation
+  presentation   Presentation @relation(fields: [presentationId], references: [id])
+  
+  // Relasi: Satu QnA punya banyak Answer
+  answers        Answer[]
+}
+
+model Answer {
+  id          Int      @id @default(autoincrement())
+  question_id Int      // Foreign Key
+  answer      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relasi ke QnA
+  question    Qna      @relation(fields: [question_id], references: [id])
 }
