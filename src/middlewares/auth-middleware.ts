@@ -1,5 +1,5 @@
 import { NextFunction, Response } from "express"
-import { UserRequest } from "../models/user-request-model"
+import { UserRequest } from "../models/user-model"
 import { ResponseError } from "../error/response-error"
 import { verifyToken } from "../utils/jwt-util"
 

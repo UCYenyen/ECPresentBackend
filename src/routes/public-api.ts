@@ -5,4 +5,5 @@ export const publicRouter = express.Router()
 
 publicRouter.post("/register", UserController.register)
 publicRouter.post("/login", UserController.login)
+publicRouter.post("/guest", UserController.guest)
 
