@@ -14,7 +14,7 @@ export interface LearningProgressResponse{
     id: number;
     user_id: number;
     learning_id: number;
-    isCompleted: boolean;
+    status: "LOCKED" | "ONPROGRESS" | "COMPLETED";
     createdAt: Date;
     updatedAt: Date;
 }
@@ -24,7 +24,7 @@ export function toLearningProgressResponse(learningProgress: LearningProgressRes
         id: learningProgress.id,
         user_id: learningProgress.user_id,
         learning_id: learningProgress.learning_id,
-        isCompleted: learningProgress.isCompleted,
+        status: learningProgress.status,
         createdAt: learningProgress.createdAt,
         updatedAt: learningProgress.updatedAt,
     }

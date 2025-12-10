@@ -10,7 +10,6 @@ async function main() {
         description:
           "Key questions to ask before writing, identifying key messages, and building the story/communication flow.",
         video_url: "https://www.youtube.com/watch?v=W7GPV0K6iEY",
-        status: "ONPROGRESS",
       },
       {
         title: "Discover the Roadmap to Engaging PowerPoint Presentations",

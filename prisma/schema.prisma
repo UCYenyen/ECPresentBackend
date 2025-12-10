@@ -26,7 +26,7 @@ model Learning{
   video_url     String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  status        LearningStatus @default(LOCKED)
+  
 
   learningProgress LearningProgress[]
 }
@@ -35,7 +35,7 @@ model LearningProgress{
   id            Int            @id @default(autoincrement())
   user_id       Int
   learning_id   Int
-  
+  status        LearningStatus @default(LOCKED)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 

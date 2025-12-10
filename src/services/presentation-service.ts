@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client"
 import { CreatePresentationRequest, PresentationAnalysisResponse, PresentationResponse } from "../models/presentation-model"
 import { prismaClient } from "../utils/database-util"
 import { analyzeVideoWithGemini } from "../utils/gemini-util"
