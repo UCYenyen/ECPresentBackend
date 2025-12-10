@@ -1,7 +1,5 @@
 import { PrismaClient } from "@prisma/client"
 import { CreatePresentationRequest, PresentationAnalysisResponse, PresentationResponse } from "../models/presentation-model"
-import { PresentationValidation } from "../validations/presentation-validation"
-import { Validation } from "../validations/validation"
 import { prismaClient } from "../utils/database-util"
 import { analyzeVideoWithGemini } from "../utils/gemini-util"
 import fs from "fs"
@@ -17,16 +15,21 @@ export class PresentationService {
             }
         })
 
-        // Process video with Gemini AI asynchronously
+        // Process video with Gemini AI synchronously (tunggu hingga selesai)
         if (videoPath) {
-            this.processVideoWithGemini(presentation.id, videoPath)
+            await this.processVideoWithGemini(presentation.id, videoPath)
         }
+
+        // Get updated presentation with COMPLETED status
+        const updatedPresentation = await prismaClient.presentation.findUnique({
+            where: { id: presentation.id }
+        })
 
         return {
             id: presentation.id,
             title: presentation.title,
             video_url: presentation.video_url,
-            status: presentation.status
+            status: updatedPresentation?.status || "COMPLETED"
         }
     }
 
@@ -45,12 +48,14 @@ export class PresentationService {
         }
     }
 
-    private static async processVideoWithGemini(presentationId: number, videoPath: string) {
+    private static async processVideoWithGemini(presentationId: number, videoPath: string): Promise<void> {
         try {
             console.log(`Processing video for presentation ${presentationId}...`)
 
-            // Analyze video with Gemini
+            // Analyze video with Gemini - AWAIT disini agar tunggu sampai selesai
             const analysis = await analyzeVideoWithGemini(videoPath)
+
+            console.log(`Analysis result:`, analysis)
 
             // Save feedback to database
             await prismaClient.feedbacks.create({
@@ -94,6 +99,8 @@ export class PresentationService {
                 where: { id: presentationId },
                 data: { status: "ONGOING" }
             })
+            
+            throw error
         }
     }
 }

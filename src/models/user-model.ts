@@ -41,7 +41,7 @@ export function toUserResponse(
                 email: email,
                 isGuest: isGuest,
             },
-            "1h"
+            isGuest ? "7d" : "24h" // Guest token 7 hari, user biasa 24 jam
         ),
     }
 }

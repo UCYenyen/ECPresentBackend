@@ -18,10 +18,17 @@ export class PresentationController {
                 video_url: req.file.path
             }
 
+            // Await hingga processing selesai
             const response = await PresentationService.create(request, req.file.path)
             
+            // Get analysis result
+            const analysis = await PresentationService.getAnalysis(response.id)
+            
             res.status(200).json({
-                data: response
+                data: {
+                    presentation: response,
+                    analysis: analysis
+                }
             })
         } catch (e) {
             next(e)

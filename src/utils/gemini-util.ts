@@ -21,14 +21,14 @@ export const analyzeVideoWithGemini = async (videoPath: string): Promise<GeminiA
         const videoData = fs.readFileSync(videoPath)
         const videoBase64 = videoData.toString('base64')
 
-        const prompt = `Analyze this presentation video and provide a detailed evaluation in JSON format with the following structure:
+        const prompt = `Analyze this presentation video, make sure that the video is indeed a valid presentation video not just a random mubling video and provide a detailed evaluation using the language that the presenter is speaking about the presentation in JSON format with the following structure:
         {
             "expression": <float 0-100>,
             "intonation": <float 0-100>,
             "posture": <float 0-100>,
             "overall_rating": <string: "S", "A", "B", "C", "D", or "E">,
             "suggestion": <string with improvement suggestions>,
-            "questions": [<array of 3 potential audience questions>]
+            "questions": [<array of 3 potential audience questions based on the video that the audience gave>]
         }
         
         Criteria:
@@ -78,15 +78,15 @@ export const analyzeVideoWithGemini = async (videoPath: string): Promise<GeminiA
 function generateMockAnalysis(): GeminiAnalysisResult {
     const mockRatings = ["S", "A", "B", "C", "D", "E"]
     return {
-        expression: parseFloat((Math.random() * 100).toFixed(2)),
-        intonation: parseFloat((Math.random() * 100).toFixed(2)),
-        posture: parseFloat((Math.random() * 100).toFixed(2)),
-        overall_rating: mockRatings[Math.floor(Math.random() * mockRatings.length)],
-        suggestion: "Try to maintain eye contact and vary your pitch to keep the audience engaged.",
+        expression: 0,
+        intonation: 0,
+        posture: 0,
+        overall_rating: "E",
+        suggestion: "-",
         questions: [
-            "Could you elaborate on the data source used in slide 3?",
-            "How does this solution scale with more users?",
-            "What were the main challenges you faced during implementation?"
+            "-",
+            "-",
+            "-"
         ]
     }
 }
