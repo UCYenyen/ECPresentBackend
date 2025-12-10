@@ -1,12 +1,13 @@
 import { string } from "zod"
 import { generateToken } from "../utils/jwt-util"
+import { Request } from "express";
 
 export interface UserJWTPayload {
     id: number
     username: string
     email: string
+    isGuest?: boolean
 }
-
 export interface RegisterUserRequest {
     username: string
     email: string
@@ -22,10 +23,15 @@ export interface UserResponse {
     token?: string
 }
 
+export interface UserRequest extends Request {
+    user?: UserJWTPayload
+}
+
 export function toUserResponse(
     id: number,
     username: string,
-    email: string
+    email: string,
+    isGuest?: boolean
 ): UserResponse {
     return {
         token: generateToken(
@@ -33,6 +39,7 @@ export function toUserResponse(
                 id: id,
                 username: username,
                 email: email,
+                isGuest: isGuest,
             },
             "1h"
         ),

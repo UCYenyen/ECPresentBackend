@@ -1,3 +1,4 @@
+import { Request } from "express"
 import { ResponseError } from "../error/response-error"
 import {
     LoginUserRequest,
@@ -11,24 +12,50 @@ import { Validation } from "../validations/validation"
 import bcrypt from "bcrypt"
 
 export class UserService {
-    static async register(request: RegisterUserRequest): Promise<UserResponse> {
+    static async register(request: RegisterUserRequest & { userId?: number }): Promise<UserResponse> {
         const validatedData = Validation.validate(
             UserValidation.REGISTER,
             request
         )
 
-        const email = await prismaClient.user.findFirst({
+        const emailExists = await prismaClient.user.findFirst({
             where: {
                 email: validatedData.email,
             },
         })
 
-        if (email) {
+        if (emailExists) {
             throw new ResponseError(400, "Email has already existed!")
         }
 
         validatedData.password = await bcrypt.hash(validatedData.password, 10)
 
+        // Jika ada userId (guest user), update user tersebut
+        if (request.userId) {
+            const existingUser = await prismaClient.user.findUnique({
+                where: { id: request.userId },
+            })
+
+            if (!existingUser || !existingUser.is_guest) {
+                throw new ResponseError(400, "Invalid guest user!")
+            }
+
+            const user = await prismaClient.user.update({
+                data: {
+                    username: validatedData.username,
+                    email: validatedData.email,
+                    password: validatedData.password,
+                    is_guest: false,
+                },
+                where: {
+                    id: request.userId,
+                },
+            })
+
+            return toUserResponse(user.id, user.username, user.email)
+        }
+
+        // Jika tidak ada userId, create user baru
         const user = await prismaClient.user.create({
             data: {
                 username: validatedData.username,
@@ -63,5 +90,18 @@ export class UserService {
         }
 
         return toUserResponse(user.id, user.username, user.email)
+    }
+
+    static async guest(request: Request) : Promise<UserResponse> {
+        const user = await prismaClient.user.create({
+            data: {
+                username: `guest_${Date.now()}`,
+                email: `guest_${Date.now()}@example.com`,
+                password: await bcrypt.hash(`guest_password_${Date.now()}`, 10),
+                is_guest: true,
+            },
+        })
+
+        return toUserResponse(user.id, user.username, user.email, true)
     }
 }

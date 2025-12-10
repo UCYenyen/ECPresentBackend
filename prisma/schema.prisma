@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -10,69 +9,61 @@ datasource db {
 
 model User {
   id            Int            @id @default(autoincrement())
-  username      String
+  username      String         @default(cuid()) @unique
+  is_guest       Boolean        @default(false)
   email         String         @unique
   password      String
-  image_url     String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-
-  // Relasi: Satu User punya banyak Presentation
   presentations Presentation[]
 }
 
 model Presentation {
   id        Int      @id @default(autoincrement())
-  userId    Int      // Foreign Key
+  user_id    Int     
   video_url String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // Relasi ke User
-  user      User     @relation(fields: [userId], references: [id])
-
-  // Relasi: Satu Presentation punya banyak QnA
-  qnas      Qna[]
-  
-  // Relasi: Satu Presentation punya satu Feedback (One-to-One atau One-to-Many)
+  status    PresentationStatus @default(ONGOING)
+  user      User     @relation(fields: [user_id], references: [id])
+  questions      Question[]
   feedbacks Feedbacks[] 
 }
 
 model Feedbacks {
   id             Int          @id @default(autoincrement())
-  presentationId Int          // Foreign Key (Saya ganti dari chat_id String biar relasi jalan)
-  expression     String       // Sesuai diagram (sebelumnya experience)
-  intonation     Int          // Sesuai diagram (sebelumnya intonsity)
-  gesture        String
+  presentation_id Int         
+  expression     String     
+  intonation     Int         
+  posture        String
   overall_rating Float
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  // Relasi ke Presentation
-  presentation   Presentation @relation(fields: [presentationId], references: [id])
+  presentation   Presentation @relation(fields: [presentation_id], references: [id])
 }
 
-model Qna {
+model Question {
   id             Int          @id @default(autoincrement())
-  presentationId Int          // Foreign Key
+  presentation_id Int         
   question       String
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  // Relasi ke Presentation
-  presentation   Presentation @relation(fields: [presentationId], references: [id])
-  
-  // Relasi: Satu QnA punya banyak Answer
+  presentation   Presentation @relation(fields: [presentation_id], references: [id])
   answers        Answer[]
 }
 
 model Answer {
   id          Int      @id @default(autoincrement())
-  question_id Int      // Foreign Key
+  question_id Int   
   answer      String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  question    Question      @relation(fields: [question_id], references: [id])
+}
 
-  // Relasi ke QnA
-  question    Qna      @relation(fields: [question_id], references: [id])
+enum PresentationStatus {
+  ONGOING
+  COMPLETED
 }
