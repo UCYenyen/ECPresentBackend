@@ -15,12 +15,10 @@ export class PresentationService {
             }
         })
 
-        // Process video with Gemini AI synchronously (tunggu hingga selesai)
         if (videoPath) {
             await this.processVideoWithGemini(presentation.id, videoPath)
         }
 
-        // Get updated presentation with COMPLETED status
         const updatedPresentation = await prismaClient.presentation.findUnique({
             where: { id: presentation.id }
         })
@@ -52,12 +50,9 @@ export class PresentationService {
         try {
             console.log(`Processing video for presentation ${presentationId}...`)
 
-            // Analyze video with Gemini - AWAIT disini agar tunggu sampai selesai
             const analysis = await analyzeVideoWithGemini(videoPath)
 
             console.log(`Analysis result:`, analysis)
-
-            // Save feedback to database
             await prismaClient.feedbacks.create({
                 data: {
                     presentation_id: presentationId,
@@ -69,7 +64,6 @@ export class PresentationService {
                 }
             })
 
-            // Save questions to database
             for (const q of analysis.questions) {
                 await prismaClient.question.create({
                     data: {
@@ -79,13 +73,11 @@ export class PresentationService {
                 })
             }
 
-            // Update presentation status to COMPLETED
             await prismaClient.presentation.update({
                 where: { id: presentationId },
                 data: { status: "COMPLETED" }
             })
 
-            // Delete video file after processing
             if (fs.existsSync(videoPath)) {
                 fs.unlinkSync(videoPath)
             }
@@ -93,8 +85,7 @@ export class PresentationService {
             console.log(`Successfully processed presentation ${presentationId}`)
         } catch (error) {
             console.error(`Error processing video for presentation ${presentationId}:`, error)
-            
-            // Update status to indicate error
+
             await prismaClient.presentation.update({
                 where: { id: presentationId },
                 data: { status: "ONGOING" }
