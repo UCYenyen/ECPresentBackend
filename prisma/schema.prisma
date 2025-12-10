@@ -20,6 +20,7 @@ model User {
 
 model Presentation {
   id        Int      @id @default(autoincrement())
+  title     String
   user_id    Int     
   video_url String
   createdAt DateTime @default(now())
@@ -33,10 +34,11 @@ model Presentation {
 model Feedbacks {
   id             Int          @id @default(autoincrement())
   presentation_id Int         
-  expression     String     
-  intonation     Int         
-  posture        String
-  overall_rating Float
+  expression     Float     
+  intonation     Float         
+  posture        Float
+  overall_rating String
+  suggestion      String?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
