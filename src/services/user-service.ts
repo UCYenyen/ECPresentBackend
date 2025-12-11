@@ -4,6 +4,7 @@ import {
     LoginUserRequest,
     RegisterUserRequest,
     toUserResponse,
+    UpdateUserRequest,
     UserResponse,
 } from "../models/user-model"
 import { prismaClient } from "../utils/database-util"
@@ -104,4 +105,35 @@ export class UserService {
 
         return toUserResponse(user.id, user.username, user.email, true)
     }
+
+    static async getUserById(userId: number): Promise<UserResponse> {
+        const user = await prismaClient.user.findUnique({
+            where: { id: userId },
+        })
+        if (!user) {
+            throw new ResponseError(404, "User not found")
+        }
+        return toUserResponse(user.id, user.username, user.email, user.is_guest)
+    }
+
+    static async updateUserById(
+        userId: number,
+        updateData: UpdateUserRequest
+    ): Promise<UserResponse> {
+        const user = await prismaClient.user.findUnique({
+            where: { id: userId },
+        })
+        if (!user) {
+            throw new ResponseError(404, "User not found")
+        }
+        const updatedUser = await prismaClient.user.update({
+            where: { id: userId },
+            data: {
+                username: updateData.username || user.username,
+                email: updateData.email || user.email,
+                password: updateData.password || user.password,
+            },
+        })
+        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.is_guest)
+        }
 }

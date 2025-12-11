@@ -7,8 +7,8 @@ import { publicRouter } from "./public-api"
 import { LearningController } from "../controllers/learning-controller"
 
 export const privateRouter = express.Router()
-
 privateRouter.use(authMiddleware)
+
 privateRouter.post("/register-from-guest", UserController.registerFromGuest)
 
 privateRouter.post("/presentations", uploadVideo.single('video'), PresentationController.create)
@@ -18,3 +18,8 @@ privateRouter.get("/presentations/:presentationId/analysis", PresentationControl
 publicRouter.get("/get-my-learnings", LearningController.getAllLearningProgresses)
 publicRouter.get("/get-learning/:id", LearningController.getLearningProgress)
 publicRouter.post("/start-learning", LearningController.startLearning)
+
+privateRouter.get("/get-profile", UserController.getProfile)
+privateRouter.put("/update-profile", UserController.updateProfile)
+
+

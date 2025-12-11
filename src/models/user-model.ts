@@ -14,6 +14,11 @@ export interface RegisterUserRequest {
     password: string
 }
 
+export interface UpdateUserRequest {
+    username?: string
+    email?: string
+    password?: string
+}
 export interface LoginUserRequest {
     email: string
     password: string
