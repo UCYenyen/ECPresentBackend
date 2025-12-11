@@ -2,9 +2,11 @@ import express from "express"
 import { authMiddleware } from "../middlewares/auth-middleware"
 import { UserController } from "../controllers/user-controller"
 import { PresentationController } from "../controllers/presentation-controller"
-import { uploadVideo } from "../middlewares/upload-middleware"
+import {uploadVideo } from "../middlewares/upload-middleware"
+import { uploadImage } from "../middlewares/upload-image.middleware"
 import { publicRouter } from "./public-api"
 import { LearningController } from "../controllers/learning-controller"
+import { AvatarController } from "../controllers/avatar-controller"
 
 export const privateRouter = express.Router()
 privateRouter.use(authMiddleware)
@@ -21,5 +23,11 @@ publicRouter.post("/start-learning", LearningController.startLearning)
 
 privateRouter.get("/get-profile", UserController.getProfile)
 privateRouter.put("/update-profile", UserController.updateProfile)
+
+privateRouter.post("/avatar", uploadImage.single('image'), AvatarController.create)
+privateRouter.get("/avatar", AvatarController.list)
+privateRouter.get("/avatar/:id", AvatarController.get)
+privateRouter.put("/avatar/:id", uploadImage.single('image'), AvatarController.update)
+privateRouter.delete("/avatar/:id", AvatarController.delete)
 
 

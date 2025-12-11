@@ -42,7 +42,14 @@ export interface AvatarResponse {
   id: number;
   image_url: string;
 }
+export interface CreateAvatarRequest {
+    file?: Express.Multer.File;
+}
 
+export interface UpdateAvatarRequest {
+    id: number;
+    file?: Express.Multer.File;
+}
 export function toUserResponse(
   id: number,
   username: string,
