@@ -102,6 +102,7 @@ export class UserService {
                 password: await bcrypt.hash(`guest_password_${Date.now()}`, 10),
                 image_url: "",
                 is_guest: true,
+                avatar_id: 1
             },
         })
 
