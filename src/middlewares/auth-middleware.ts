@@ -39,7 +39,9 @@ export const authMiddleware = (
                         id: payload.id,
                         username: payload.username,
                         email: payload.email,
-                        isGuest: payload.isGuest
+                        isGuest: payload.isGuest,
+                        avatar_id: payload.avatar_id,
+                        image_url: payload.image_url
                     },
                     "7d" // 7 hari untuk guest
                 )
