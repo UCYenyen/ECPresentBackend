@@ -24,17 +24,19 @@ export class LearningService {
     return learningProgressData.map((lp) => toLearningProgressResponse(lp));
   }
 
-  static async getAllLearningProgresses(user_id: number): Promise<LearningProgressResponse[]> {
+  static async getAllLearningProgresses(
+    user_id: number
+  ): Promise<LearningProgressResponse[]> {
     const learningProgressData = await prismaClient.learningProgress.findMany({
       include: {
         learning: true,
       },
-      where:{
-        user_id: user_id
-      }
+      where: {
+        user_id: user_id,
+      },
     });
     return learningProgressData.map((lp) => toLearningProgressResponse(lp));
-  } 
+  }
 
   static async getAllLearnings(): Promise<LearningResponse[]> {
     const learnings = await prismaClient.learning.findMany();
@@ -52,7 +54,7 @@ export class LearningService {
     learningId: number
   ): Promise<LearningProgressResponse> {
     const validatedData = Validation.validate(
-      LearningValidation.START_LEARNING_PROGRESS,
+      LearningValidation.GET_ALL_LEARNING_PROGRESS,
       {
         user_id: userId,
         learning_id: learningId,
@@ -65,8 +67,25 @@ export class LearningService {
         learning_id: validatedData.learning_id,
         status: "ONPROGRESS",
       },
-    }); 
+    });
 
     return toLearningProgressResponse(learningProgress);
+  }
+
+  static async completeLearning(
+    learning_progress_id: number,
+  ): Promise<LearningProgressResponse> {
+    const validatedData = Validation.validate(
+      LearningValidation.UPDATE_LEARNING_PROGRESS,
+      {
+        id: learning_progress_id,
+      }
+    );
+    const updateLeearningProgress = await prismaClient.learningProgress.update({
+      where: { id: validatedData.id },
+      data: { status: "COMPLETED" },
+    });
+
+    return toLearningProgressResponse(updateLeearningProgress);
   }
 }
