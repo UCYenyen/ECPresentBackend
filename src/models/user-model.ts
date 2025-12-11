@@ -18,7 +18,13 @@ export interface UpdateUserRequest {
     username?: string
     email?: string
     password?: string
+    avatar_id?: number
 }
+
+export interface CreateAvatarRequest{
+    avatar_url: string;
+}
+
 export interface LoginUserRequest {
     email: string
     password: string

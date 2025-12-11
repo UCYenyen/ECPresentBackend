@@ -13,10 +13,28 @@ model User {
   is_guest       Boolean        @default(false)
   email         String         @unique
   password      String
+  avatar_id     Int             @default(1)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   presentations Presentation[]
   learningProgress LearningProgress[]
+  avatar        Avatar        @relation(fields: [avatar_id], references: [id])
+}
+
+model Avatar{
+  id        Int      @id @default(autoincrement())
+  image_url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+model UserAvatar{
+  id Int @id @default(autoincrement())
+  user_id Int
+  avatar_id Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Learning{

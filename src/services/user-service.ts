@@ -132,8 +132,9 @@ export class UserService {
                 username: updateData.username || user.username,
                 email: updateData.email || user.email,
                 password: updateData.password || user.password,
+
             },
         })
         return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.is_guest)
-        }
+    }
 }
