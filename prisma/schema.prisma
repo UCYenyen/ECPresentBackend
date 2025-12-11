@@ -8,104 +8,95 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  username      String         @default(cuid()) @unique
-  is_guest       Boolean        @default(false)
-  email         String         @unique
-  password      String
-  avatar_id     Int             @default(1)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  presentations Presentation[]
+  id               Int                @id @default(autoincrement())
+  username         String             @unique @default(cuid())
+  email            String             @unique
+  password         String
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  
+  is_guest         Boolean            @default(false)
+  
+  image_url       String
+  avatar_id        Int                @default(1)
+  avatar           Avatar             @relation(fields: [avatar_id], references: [id])
   learningProgress LearningProgress[]
-  avatar        Avatar        @relation(fields: [avatar_id], references: [id])
+  presentations    Presentation[]
 }
 
-model Avatar{
+model Avatar {
   id        Int      @id @default(autoincrement())
-  image_url       String
+  image_url String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   users     User[]
 }
 
-model UserAvatar{
-  id Int @id @default(autoincrement())
-  user_id Int
-  avatar_id Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Learning{
-  id            Int            @id @default(autoincrement())
-  title         String
-  description   String
-  video_url     String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  
-
+model Learning {
+  id               Int                @id @default(autoincrement())
+  title            String
+  description      String
+  video_url        String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
   learningProgress LearningProgress[]
 }
 
-model LearningProgress{
-  id            Int            @id @default(autoincrement())
-  user_id       Int
-  learning_id   Int
-  status        LearningStatus @default(LOCKED)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-
-  user          User           @relation(fields: [user_id], references: [id])
-  learning      Learning       @relation(fields: [learning_id], references: [id])
+model LearningProgress {
+  id          Int            @id @default(autoincrement())
+  user_id     Int
+  learning_id Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  status      LearningStatus @default(LOCKED)
+  learning    Learning       @relation(fields: [learning_id], references: [id])
+  user        User           @relation(fields: [user_id], references: [id])
 }
 
 model Presentation {
-  id        Int      @id @default(autoincrement())
-  title     String
-  user_id    Int     
+  id        Int                @id @default(autoincrement())
+  user_id   Int
   video_url String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
   status    PresentationStatus @default(ONGOING)
-  user      User     @relation(fields: [user_id], references: [id])
-  questions      Question[]
-  feedbacks Feedbacks[] 
+  title     String
+  feedbacks Feedbacks[]
+  user      User               @relation(fields: [user_id], references: [id])
+  questions Question[]
 }
 
 model Feedbacks {
-  id             Int          @id @default(autoincrement())
-  presentation_id Int         
-  expression     Float     
-  intonation     Float         
-  posture        Float
-  overall_rating String
+  id              Int          @id @default(autoincrement())
+  presentation_id Int
+  intonation      Float
+  overall_rating  String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
   suggestion      String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  presentation   Presentation @relation(fields: [presentation_id], references: [id])
+  expression      Float
+  posture         Float
+  presentation    Presentation @relation(fields: [presentation_id], references: [id])
 }
 
 model Question {
-  id             Int          @id @default(autoincrement())
-  presentation_id Int         
-  question       String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-
-  presentation   Presentation @relation(fields: [presentation_id], references: [id])
-  answers        Answer[]
+  id              Int          @id @default(autoincrement())
+  presentation_id Int
+  question        String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  answers         Answer[]
+  presentation    Presentation @relation(fields: [presentation_id], references: [id])
 }
 
 model Answer {
   id          Int      @id @default(autoincrement())
-  question_id Int   
+  question_id Int
   answer      String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  question    Question      @relation(fields: [question_id], references: [id])
+  question    Question @relation(fields: [question_id], references: [id])
 }
 
 enum PresentationStatus {
@@ -113,7 +104,7 @@ enum PresentationStatus {
   COMPLETED
 }
 
-enum LearningStatus{
+enum LearningStatus {
   LOCKED
   ONPROGRESS
   COMPLETED
