@@ -1,4 +1,5 @@
 import { Request } from "express"
+import { UserRole } from "@prisma/client"
 import { ResponseError } from "../error/response-error"
 import {
     LoginUserRequest,
@@ -37,7 +38,7 @@ export class UserService {
                 where: { id: request.userId },
             })
 
-            if (!existingUser || !existingUser.is_guest) {
+            if (!existingUser || existingUser.role !== UserRole.GUEST) {
                 throw new ResponseError(400, "Invalid guest user!")
             }
 
@@ -46,14 +47,14 @@ export class UserService {
                     username: validatedData.username,
                     email: validatedData.email,
                     password: validatedData.password,
-                    is_guest: false,
+                    role: UserRole.USER,
                 },
                 where: {
                     id: request.userId,
                 },
             })
 
-            return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+            return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
         }
 
         // Jika tidak ada userId, create user baru
@@ -66,7 +67,7 @@ export class UserService {
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
     }
 
     static async login(request: LoginUserRequest): Promise<UserResponse> {
@@ -91,7 +92,7 @@ export class UserService {
             throw new ResponseError(400, "Invalid email or password!")
         }
 
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
     }
 
     static async guest(request: Request) : Promise<UserResponse> {
@@ -101,12 +102,11 @@ export class UserService {
                 email: `guest_${Date.now()}@example.com`,
                 password: await bcrypt.hash(`guest_password_${Date.now()}`, 10),
                 image_url: "",
-                is_guest: true,
-                avatar_id: 1
+                role: UserRole.GUEST,
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
     }
 
     static async getUserById(userId: number): Promise<UserResponse> {
@@ -116,7 +116,7 @@ export class UserService {
         if (!user) {
             throw new ResponseError(404, "User not found")
         }
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
     }
 
     static async updateUserById(
@@ -147,6 +147,6 @@ export class UserService {
                 avatar_id: validatedData.avatar_id || user.avatar_id,
             },
         })
-        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.avatar_id, updatedUser.image_url, updatedUser.is_guest)
+        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.avatar_id, updatedUser.image_url, updatedUser.role)
     }
 }

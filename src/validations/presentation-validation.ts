@@ -4,10 +4,23 @@ export class PresentationValidation {
     static readonly CREATE: ZodType = z.object({
         title: z.string().min(1),
         user_id: z.number().min(1),
-        video_url: z.string().url()
+        video_url: z.string(). min(1, "Video path is required")
     })
 
     static readonly GET: ZodType = z.object({
         id: z.number().min(1)
     })
+
+    static readonly UPDATE: ZodType = z.object({
+        id: z.number().min(1),
+        title: z.string().min(1).optional(),
+        video_url: z.string().min(1).optional(),
+        status: z.enum(["ONGOING", "COMPLETED", "FAILED"]).optional()
+    })
+
+    static readonly SUBMIT_ANSWER: ZodType = z.object({
+        questionId: z.number().min(1),
+        audioPath: z.string().min(1, "Audio path is required")
+    })
 }
+

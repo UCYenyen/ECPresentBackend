@@ -25,7 +25,7 @@ export const authMiddleware = (
         req.user = payload
 
         // Auto-refresh token untuk guest user
-        if (payload.isGuest) {
+        if (payload.role === "GUEST") {
             const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
             const expiryTime = decodedToken.exp * 1000
             const currentTime = Date.now()
@@ -39,7 +39,7 @@ export const authMiddleware = (
                         id: payload.id,
                         username: payload.username,
                         email: payload.email,
-                        isGuest: payload.isGuest,
+                        role: payload.role,
                         avatar_id: payload.avatar_id,
                         image_url: payload.image_url
                     },

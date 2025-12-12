@@ -26,7 +26,7 @@ export class UserController {
             const request: RegisterUserRequest = req.body as RegisterUserRequest
             const userId = req.user?.id
             
-            if (!userId || !req.user?.isGuest) {
+            if (!userId || !req.user?.role || req.user.role !== "GUEST") {
                 throw new Error("Only guest users can use this endpoint")
             }
 

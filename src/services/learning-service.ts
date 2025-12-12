@@ -6,6 +6,7 @@ import {
 } from "../models/learning-model";
 import { Validation } from "../validations/validation";
 import { LearningValidation } from "../validations/learning-validation";
+import { ResponseError } from "../error/response-error";
 
 export class LearningService {
   static async getLearningProgress(
@@ -27,12 +28,15 @@ export class LearningService {
   static async getAllLearningProgresses(
     user_id: number
   ): Promise<LearningProgressResponse[]> {
+    const validatedData = Validation.validate(LearningValidation.GET_ALL, {
+      user_id: user_id,
+    });
     const learningProgressData = await prismaClient.learningProgress.findMany({
       include: {
         learning: true,
       },
       where: {
-        user_id: user_id,
+        user_id: validatedData.user_id,
       },
     });
     return learningProgressData.map((lp) => toLearningProgressResponse(lp));
@@ -73,7 +77,7 @@ export class LearningService {
   }
 
   static async completeLearning(
-    learning_progress_id: number,
+    learning_progress_id: number
   ): Promise<LearningProgressResponse> {
     const validatedData = Validation.validate(
       LearningValidation.UPDATE_LEARNING_PROGRESS,
@@ -87,5 +91,28 @@ export class LearningService {
     });
 
     return toLearningProgressResponse(updateLeearningProgress);
+  }
+
+  static async getLearningProgressById(
+    id: number
+  ): Promise<LearningProgressResponse> {
+    const validatedData = Validation.validate(LearningValidation.GET_ALL, {
+      id: id,
+    });
+
+    const learningProgressData = await prismaClient.learningProgress.findUnique(
+      {
+        where: { id: validatedData.id },
+        include: {
+          learning: true,
+        },
+      }
+    );
+
+    if (!learningProgressData) {
+      throw new ResponseError(404, "Learning progress not found");
+    }
+
+    return toLearningProgressResponse(learningProgressData);
   }
 }

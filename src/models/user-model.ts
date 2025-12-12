@@ -1,12 +1,13 @@
 import { string } from "zod";
 import { generateToken } from "../utils/jwt-util";
 import { Request } from "express";
+import { UserRole } from "@prisma/client";
 
 export interface UserJWTPayload {
   id: number;
   username: string;
   email: string;
-  isGuest?: boolean;
+  role?: UserRole;
   avatar_id: number;
   image_url?: string;
 }
@@ -56,7 +57,7 @@ export function toUserResponse(
   email: string,
   avatar_id: number,
   image_url?: string,
-  isGuest?: boolean
+  role?: UserRole
 ): UserResponse {
   return {
     token: generateToken(
@@ -64,11 +65,11 @@ export function toUserResponse(
         id: id,
         username: username,
         email: email,
-        isGuest: isGuest,
+        role: role,
         image_url: image_url,
         avatar_id: avatar_id,
       },
-      isGuest ? "7d" : "24h" // Guest token 7 hari, user biasa 24 jam
+      role === UserRole.GUEST ? "7d" : "24h" // Guest token 7 hari, user biasa 24 jam
     ),
   };
 }
