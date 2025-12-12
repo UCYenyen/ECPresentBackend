@@ -6,12 +6,13 @@ import { Validation } from "../validations/validation"
 
 export class PresentationService {
     static async create(request: CreatePresentationRequest, videoPath?: string): Promise<PresentationResponse> {
+        const validation = Validation.validate(PresentationValidation.CREATE, request)
         const presentation = await prismaClient.presentation.create({
             data: {
-                user_id: request.user_id,
-                video_url: request.video_url,
+                user_id: validation.user_id,
+                video_url: validation.video_url,
                 status: "ONGOING",
-                title: request.title
+                title: validation.title || "Untitled Presentation"
             }
         })
 

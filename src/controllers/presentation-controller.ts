@@ -3,6 +3,7 @@ import { PresentationService } from "../services/presentation-service"
 import { CreatePresentationRequest } from "../models/presentation-model"
 import { UserRequest } from "../models/user-model"
 import { FeedbackService } from "../services/feedback-service"
+import { Validation } from "../validations/validation"
 
 export class PresentationController {
     static async create(req: UserRequest, res: Response, next: NextFunction) {
@@ -10,6 +11,12 @@ export class PresentationController {
             if (!req.file) {
                 return res.status(400).json({
                     errors: 'Video file is required'
+                })
+            }
+
+            if (!req.body.title) {
+                return res.status(400).json({
+                    errors: 'Title is required'
                 })
             }
 

@@ -6,7 +6,7 @@ export interface GeminiAnalysisResult {
     expression: number
     intonation: number
     posture: number
-    overall_rating: string
+    overall_rating: number
     suggestion: string
     questions: string[]
 }
@@ -49,7 +49,7 @@ export const analyzeVideoWithGemini = async (videoPath: string): Promise<GeminiA
             "expression": <float 0-100>,
             "intonation": <float 0-100>,
             "posture": <float 0-100>,
-            "overall_rating": <string: "S", "A", "B", "C", "D", or "E">,
+            "overall_rating": <float 0-100>,
             "suggestion": <string with improvement suggestions>,
             "questions": [<array of 3 potential audience questions based on the video that the audience gave>]
         }
@@ -98,7 +98,7 @@ export const analyzeVideoWithGemini = async (videoPath: string): Promise<GeminiA
             expression: parseFloat(analysis.expression) || 0,
             intonation: parseFloat(analysis.intonation) || 0,
             posture: parseFloat(analysis.posture) || 0,
-            overall_rating: analysis.overall_rating || "C",
+            overall_rating: parseFloat(analysis.overall_rating) || 0,
             suggestion: analysis.suggestion || "No suggestions available",
             questions: analysis.questions || []
         }
@@ -115,7 +115,7 @@ function generateMockAnalysis(): GeminiAnalysisResult {
         expression: 0,
         intonation: 0,
         posture: 0,
-        overall_rating: "E",
+        overall_rating: 0,
         suggestion: "-",
         questions: [
             "-",

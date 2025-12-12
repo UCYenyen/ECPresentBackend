@@ -15,7 +15,7 @@ privateRouter.post("/register-from-guest", UserController.registerFromGuest)
 
 privateRouter.post("/presentations", uploadVideo.single('video'), PresentationController.create)
 privateRouter.get("/presentations/:presentationId/analysis", PresentationController.getAnalysis)
-
+privateRouter.get("/presentations/:presentationId/feedback", PresentationController.getFinalFeedback)
 privateRouter.post("/questions/:questionId/answer",uploadAudio.single('audio'), PresentationController.submitAnswer)
 
 privateRouter.get("/get-my-learnings", LearningController.getAllLearningProgresses)
