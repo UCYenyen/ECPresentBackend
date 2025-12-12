@@ -4,6 +4,7 @@ import {
     LoginUserRequest,
     RegisterUserRequest,
     toUserResponse,
+    UpdateUserRequest,
     UserResponse,
 } from "../models/user-model"
 import { prismaClient } from "../utils/database-util"
@@ -12,7 +13,7 @@ import { Validation } from "../validations/validation"
 import bcrypt from "bcrypt"
 
 export class UserService {
-    static async register(request: RegisterUserRequest & { userId?: number }): Promise<UserResponse> {
+    static async register(request: RegisterUserRequest): Promise<UserResponse> {
         const validatedData = Validation.validate(
             UserValidation.REGISTER,
             request
@@ -52,7 +53,7 @@ export class UserService {
                 },
             })
 
-            return toUserResponse(user.id, user.username, user.email)
+            return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
         }
 
         // Jika tidak ada userId, create user baru
@@ -60,11 +61,12 @@ export class UserService {
             data: {
                 username: validatedData.username,
                 email: validatedData.email,
+                image_url: "",
                 password: validatedData.password,
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
     }
 
     static async login(request: LoginUserRequest): Promise<UserResponse> {
@@ -89,7 +91,7 @@ export class UserService {
             throw new ResponseError(400, "Invalid email or password!")
         }
 
-        return toUserResponse(user.id, user.username, user.email)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
     }
 
     static async guest(request: Request) : Promise<UserResponse> {
@@ -98,10 +100,52 @@ export class UserService {
                 username: `guest_${Date.now()}`,
                 email: `guest_${Date.now()}@example.com`,
                 password: await bcrypt.hash(`guest_password_${Date.now()}`, 10),
+                image_url: "",
                 is_guest: true,
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email, true)
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+    }
+
+    static async getUserById(userId: number): Promise<UserResponse> {
+        const user = await prismaClient.user.findUnique({
+            where: { id: userId },
+        })
+        if (!user) {
+            throw new ResponseError(404, "User not found")
+        }
+        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.is_guest)
+    }
+
+    static async updateUserById(
+        userId: number,
+        updateData: UpdateUserRequest
+    ): Promise<UserResponse> {
+        const validatedData = Validation.validate(
+            UserValidation.UPDATE,
+            updateData
+        )
+
+        if (validatedData.password) {
+            validatedData.password = await bcrypt.hash(validatedData.password, 10)
+        }   
+
+        const user = await prismaClient.user.findUnique({
+            where: { id: userId },
+        })
+        if (!user) {
+            throw new ResponseError(404, "User not found")
+        }
+        const updatedUser = await prismaClient.user.update({
+            where: { id: userId },
+            data: {
+                username: validatedData.username || user.username,
+                email: validatedData.email || user.email,
+                password: validatedData.password || user.password,
+                avatar_id: validatedData.avatar_id || user.avatar_id,
+            },
+        })
+        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.avatar_id, updatedUser.image_url, updatedUser.is_guest)
     }
 }
