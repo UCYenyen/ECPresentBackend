@@ -1,7 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
-import { GoogleAIFileManager, FileState } from "@google/generative-ai/server" // Import Wajib
+import { GoogleAIFileManager, FileState } from "@google/generative-ai/server" 
 import { GEMINI_API_KEY, GEMINI_MODEL, GEMINI_QNA_MODEL } from "./env-util"
-// fs tidak lagi dibutuhkan untuk readFileSync
 
 export interface GeminiAnalysisResult {
     expression: number
@@ -13,7 +12,7 @@ export interface GeminiAnalysisResult {
 }
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY || "")
-const fileManager = new GoogleAIFileManager(GEMINI_API_KEY || "") // Inisialisasi File Manager
+const fileManager = new GoogleAIFileManager(GEMINI_API_KEY || "") 
 
 export const analyzeVideoWithGemini = async (videoPath: string): Promise<GeminiAnalysisResult> => {
     try {
@@ -135,7 +134,6 @@ export interface AudioAnalysisResult {
 
 export const analyzeAudioAnswerWithGemini = async (audioPath: string, questionText: string): Promise<AudioAnalysisResult> => {
     try {
-        // Upload Audio
         const uploadResponse = await fileManager.uploadFile(audioPath, {
             mimeType: "audio/mp3", 
             displayName: "User Answer Audio",
@@ -148,8 +146,6 @@ export const analyzeAudioAnswerWithGemini = async (audioPath: string, questionTe
         }
 
         if (file.state === FileState.FAILED) throw new Error("Audio processing failed.");
-
-        // CONFIG MODEL 2: Menggunakan GEMINI_QNA_MODEL (Target: gemini-1.5-flash)
         const model = genAI.getGenerativeModel({ 
             model: GEMINI_QNA_MODEL || "gemini-1.5-flash", 
             generationConfig: { responseMimeType: "application/json" }
@@ -192,12 +188,10 @@ export const analyzeAudioAnswerWithGemini = async (audioPath: string, questionTe
 
     } catch (error) {
         console.error("Gemini Audio Error:", error);
-        // RETURN MOCK DATA JIKA ERROR
         return generateMockAudioAnalysis(); 
     }
 }
 
-// Tambahkan fungsi ini di paling bawah file
 function generateMockAudioAnalysis(): AudioAnalysisResult {
     return {
         score: 0,

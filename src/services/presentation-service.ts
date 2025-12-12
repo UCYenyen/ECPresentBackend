@@ -1,10 +1,10 @@
 import { CreatePresentationRequest, PresentationAnalysisResponse, PresentationResponse, FinalFeedbackResponse } from "../models/presentation-model"
 import { prismaClient } from "../utils/database-util"
 import { analyzeVideoWithGemini, analyzeAudioAnswerWithGemini } from "../utils/gemini-util"
+import { PresentationValidation } from "../validations/presentation-validation"
+import { Validation } from "../validations/validation"
 
 export class PresentationService {
-    
-    // --- 1. CREATE PRESENTATION ---
     static async create(request: CreatePresentationRequest, videoPath?: string): Promise<PresentationResponse> {
         const presentation = await prismaClient.presentation.create({
             data: {
@@ -29,7 +29,6 @@ export class PresentationService {
         }
     }
 
-    // --- 2. GET ANALYSIS (SECURE BLUR) ---
     static async getAnalysis(presentationId: number): Promise<PresentationAnalysisResponse> {
         const feedback = await prismaClient.feedbacks.findFirst({
             where: { presentation_id: presentationId }
@@ -43,105 +42,51 @@ export class PresentationService {
             where: { id: presentationId }
         })
 
-        const blurredQuestions = questions.map(q => ({
-            ...q, 
-            question: this.scrambleText(q.question) 
-        }))
 
         return {
             status: presentation?.status || "UNKNOWN",
             feedback: feedback,
-            questions: blurredQuestions 
+            questions: questions
         }
     }
 
-    // --- 3. GET ORIGINAL QUESTION (REVEAL) ---
-    static async getOriginalQuestion(questionId: number) {
-        const question = await prismaClient.question.findUnique({
-            where: { id: questionId }
-        })
-
-        if (!question) throw new Error("Question not found")
-        
-        return question 
-    }
-
-    // --- 4. SUBMIT ANSWER (AUDIO) ---
     static async submitAnswer(questionId: number, audioPath: string) {
+        const validation = Validation.validate(PresentationValidation.SUBMIT_ANSWER, { questionId, audioPath })
+
         const questionData = await prismaClient.question.findUnique({
-            where: { id: questionId }
+            where: { id: validation.questionId }
         })
 
-        if (!questionData) throw new Error("Question ID not found")
+        if (!questionData) throw new Error("Question not found")
 
-        const analysis = await analyzeAudioAnswerWithGemini(audioPath, questionData.question)
+        const analysis = await analyzeAudioAnswerWithGemini(validation.audioPath, questionData.question)
 
         const savedAnswer = await prismaClient.answer.create({
             data: {
-                question_id: questionId,
-                audio_url: audioPath,
+                question_id: validation.questionId,
+                audio_url: validation.audioPath,
                 score: analysis.score,
-                feedback: analysis.feedback,
-                is_relevant: analysis.is_relevant
             }
         })
         
         return savedAnswer
     }
-
-    // --- 5. GENERATE FINAL FEEDBACK ---
-    static async generateFinalFeedback(presentationId: number): Promise<FinalFeedbackResponse> {
-        const videoFeedback = await prismaClient.feedbacks.findFirst({
-            where: { presentation_id: presentationId }
-        })
-
-        if (!videoFeedback) throw new Error("Video analysis not ready or failed")
-
-        const answers = await prismaClient.answer.findMany({
-            where: {
-                question: { presentation_id: presentationId }
-            },
-            include: { question: true }
-        })
-
-        // --- PERBAIKAN DI SINI ---
-        // Menggunakan (a.score || 0) atau (a.score ?? 0) untuk handle null
-        let totalAudioScore = 0
-        answers.forEach(a => {
-            totalAudioScore += (a.score ?? 0) 
-        })
-        
-        const avgAudioScore = answers.length > 0 ? (totalAudioScore / answers.length) : 0
-
-        // Handle juga jika overall_rating null (jaga-jaga)
-        const videoScore = videoFeedback.overall_rating ?? 0
-
-        // Kalkulasi Skor Akhir
-        const finalScore = (Number(videoScore) * 0.6) + (avgAudioScore * 0.4)
-
-        return {
-            presentation_id: presentationId,
-            video_feedback: videoFeedback,
-            answers_summary: answers,
-            average_audio_score: parseFloat(avgAudioScore.toFixed(2)),
-            final_calculated_score: Math.round(finalScore),
-            status: "COMPLETED"
-        }
-    }
-
-    // --- 6. UPDATE TITLE ---
-    static async update(presentationId: number, title: string) {
-        const check = await prismaClient.presentation.findUnique({ where: { id: presentationId } })
+    
+    static async update(presentationId: number, title: string, status: "ONGOING" | "COMPLETED" | "FAILED") {
+        const validation = Validation.validate(PresentationValidation.UPDATE, { id: presentationId, title, status })
+        const check = await prismaClient.presentation.findUnique({ where: { id: validation.id } })
         if (!check) throw new Error("Presentation not found")
 
         const updated = await prismaClient.presentation.update({
-            where: { id: presentationId },
-            data: { title: title }
+            where: { id: validation.id },
+            data: { 
+                title: validation.title,
+                status: validation.status
+             }
         })
         return updated
     }
 
-    // --- 7. DELETE PRESENTATION ---
     static async delete(presentationId: number) {
         const check = await prismaClient.presentation.findUnique({ where: { id: presentationId } })
         if (!check) throw new Error("Presentation not found")
@@ -153,16 +98,6 @@ export class PresentationService {
         return "Presentation deleted successfully"
     }
 
-    // --- HELPER PRIVATE ---
-    private static scrambleText(text: string): string {
-        const characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        return text.split('').map(char => {
-            if (char === ' ' || char === '?' || char === '.') return char;
-            return characters.charAt(Math.floor(Math.random() * characters.length));
-        }).join('');
-    }
-
-    // --- BACKGROUND PROCESS ---
     private static async processVideoWithGemini(presentationId: number, videoPath: string): Promise<void> {
         try {
             console.log(`[Background] Start analyzing presentation #${presentationId}`)

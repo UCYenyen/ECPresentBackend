@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express"
 import { PresentationService } from "../services/presentation-service"
 import { CreatePresentationRequest } from "../models/presentation-model"
 import { UserRequest } from "../models/user-model"
+import { FeedbackService } from "../services/feedback-service"
 
 export class PresentationController {
     static async create(req: UserRequest, res: Response, next: NextFunction) {
@@ -19,32 +20,17 @@ export class PresentationController {
             }
 
             const response = await PresentationService.create(request, req.file.path)
-
-            const analysis = await PresentationService.getAnalysis(response.id)
             
             res.status(200).json({
                 data: {
-                    presentation: response,
-                    analysis: analysis
+                    presentation: response
                 }
             })
         } catch (e) {
             next(e)
         }
     }
-
-    static async getAnalysis(req: Request, res: Response, next: NextFunction) {
-        try {
-            const presentationId = parseInt(req.params.presentationId)
-            const response = await PresentationService.getAnalysis(presentationId)
-            res.status(200).json({
-                data: response
-            })
-        } catch (e) {
-            next(e)
-        }
-    }
-
+    
     static async submitAnswer(req: Request, res: Response, next: NextFunction) {
         try {
             if (!req.file) {
@@ -59,7 +45,6 @@ export class PresentationController {
             const audioPath = req.file.path
 
             const result = await PresentationService.submitAnswer(questionId, audioPath)
-
             res.status(200).json({
                 data: result,
                 message: "Answer submitted and analyzed successfully"
@@ -69,13 +54,13 @@ export class PresentationController {
         }
     }
 
-    static async getQuestionOriginal(req: Request, res: Response, next: NextFunction) {
+    static async getAnalysis(req: Request, res: Response, next: NextFunction) {
         try {
-            const questionId = parseInt(req.params.questionId)
-            const result = await PresentationService.getOriginalQuestion(questionId)
+            const presentationId = parseInt(req.params.presentationId)
             
+            const response = await PresentationService.getAnalysis(presentationId)
             res.status(200).json({
-                data: result
+                data: response
             })
         } catch (e) {
             next(e)
@@ -85,8 +70,8 @@ export class PresentationController {
     static async getFinalFeedback(req: Request, res: Response, next: NextFunction) {
         try {
             const presentationId = parseInt(req.params.presentationId)
-            const result = await PresentationService.generateFinalFeedback(presentationId)
             
+            const result = await FeedbackService.generateFinalFeedback(presentationId) 
             res.status(200).json({
                 data: result
             })
