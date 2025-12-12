@@ -83,9 +83,9 @@ export class PresentationController {
     static async update(req: Request, res: Response, next: NextFunction) {
         try {
             const presentationId = parseInt(req.params.presentationId)
-            const { title } = req.body
+            const { title, status } = req.body
             
-            const result = await PresentationService.update(presentationId, title)
+            const result = await PresentationService.update(presentationId, title, status)
             res.status(200).json({ data: result })
         } catch (e) {
             next(e)
