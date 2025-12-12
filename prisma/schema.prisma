@@ -10,7 +10,7 @@ datasource db {
 model User {
   id            Int            @id @default(autoincrement())
   username      String         @default(cuid()) @unique
-  is_guest       Boolean        @default(false)
+  role          UserRole       @default(USER)
   email         String         @unique
   password      String
   createdAt     DateTime       @default(now())
@@ -116,8 +116,8 @@ enum LearningStatus {
   COMPLETED
 }
 
-// enum UserRole {
-//   ADMIN
-//   USER
-//   GUEST
-// }
+enum UserRole {
+  ADMIN
+  USER
+  GUEST
+}
