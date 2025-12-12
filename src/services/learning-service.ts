@@ -6,6 +6,7 @@ import {
 } from "../models/learning-model";
 import { Validation } from "../validations/validation";
 import { LearningValidation } from "../validations/learning-validation";
+import { ResponseError } from "../error/response-error";
 
 export class LearningService {
   static async getLearningProgress(
@@ -87,5 +88,26 @@ export class LearningService {
     });
 
     return toLearningProgressResponse(updateLeearningProgress);
+  }
+
+  static async getLearningProgressById(
+    id: number
+  ): Promise<LearningProgressResponse> {
+    const validatedData = Validation.validate(LearningValidation.GET_ALL, {
+      id: id,
+    });
+
+    const learningProgressData = await prismaClient.learningProgress.findUnique({
+      where: { id: validatedData.id },
+      include: {
+        learning: true,
+      },
+    });
+
+    if (!learningProgressData) {
+      throw new ResponseError(404, "Learning progress not found");
+    }
+
+    return toLearningProgressResponse(learningProgressData);
   }
 }

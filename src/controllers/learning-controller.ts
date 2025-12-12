@@ -1,12 +1,13 @@
 import { Request, Response, NextFunction } from "express"
 import { LearningProgressResponse, LearningResponse } from "../models/learning-model"
 import { LearningService } from "../services/learning-service"
+import { UserRequest } from "../models/user-model"
 
 export class LearningController {
     static async getLearningProgress(req: Request, res: Response, next: NextFunction) {
         try {
-            const userId = parseInt(req.params.userId)
-            const response: LearningProgressResponse[] = await LearningService.getLearningProgress(userId)
+            const learningProgressId = parseInt(req.params.id)
+            const response: LearningProgressResponse = await LearningService.getLearningProgressById(learningProgressId)
 
             res.status(200).json({
                 data: response,
@@ -16,9 +17,9 @@ export class LearningController {
         }
     }
 
-    static async getAllLearningProgresses(req: Request, res: Response, next: NextFunction) {
+    static async getAllLearningProgresses(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const userId = parseInt(req.params.userId)
+            const userId = req.user!.id
             const response: LearningProgressResponse[] = await LearningService.getAllLearningProgresses(userId)
 
             res.status(200).json({

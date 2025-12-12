@@ -18,9 +18,9 @@ privateRouter.get("/presentations/:presentationId/analysis", PresentationControl
 
 privateRouter.post("/questions/:questionId/answer",uploadAudio.single('audio'), PresentationController.submitAnswer)
 
-publicRouter.get("/get-my-learnings", LearningController.getAllLearningProgresses)
-publicRouter.get("/get-learning/:id", LearningController.getLearningProgress)
-publicRouter.post("/start-learning", LearningController.startLearning)
+privateRouter.get("/get-my-learnings", LearningController.getAllLearningProgresses)
+privateRouter.get("/get-learning/:id", LearningController.getLearningProgress)
+privateRouter.post("/start-learning", LearningController.startLearning)
 
 privateRouter.get("/get-profile", UserController.getProfile)
 privateRouter.put("/update-profile", UserController.updateProfile)
