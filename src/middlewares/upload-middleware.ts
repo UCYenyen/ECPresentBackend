@@ -1,9 +1,16 @@
 import multer from 'multer'
 import path from 'path'
+import fs from 'fs'
+
+// Pastikan folder upload ada (PENTING: Mencegah error "Directory not found")
+const uploadDir = 'uploads/'
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/')
+        cb(null, uploadDir)
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
@@ -38,5 +45,22 @@ export const uploadVideo = multer({
     fileFilter: fileFilter,
     limits: {
         fileSize: 100 * 1024 * 1024 // 100MB
+    }
+})
+
+
+export const uploadAudio = multer({
+    storage: storage,
+    limits: { fileSize: 20 * 1024 * 1024 }, // Limit 20MB
+    fileFilter: (req, file, cb) => {
+        const allowedExtensions = ['.mp3', '.wav', '.m4a', '.webm', '.ogg', '.aac']
+        const fileExtension = path.extname(file.originalname).toLowerCase()
+        
+        // Cek MIME type audio atau ekstensi file
+        if (file.mimetype.startsWith('audio/') || allowedExtensions.includes(fileExtension)) {
+            cb(null, true)
+        } else {
+            cb(new Error('Invalid file type. Only audio files are allowed.'))
+        }
     }
 })

@@ -19,7 +19,7 @@ export class PresentationController {
             }
 
             const response = await PresentationService.create(request, req.file.path)
-            
+
             const analysis = await PresentationService.getAnalysis(response.id)
             
             res.status(200).json({
@@ -40,6 +40,79 @@ export class PresentationController {
             res.status(200).json({
                 data: response
             })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    static async submitAnswer(req: Request, res: Response, next: NextFunction) {
+        try {
+            if (!req.file) {
+                return res.status(400).json({ errors: 'Audio file is required' })
+            }
+
+            const questionId = parseInt(req.params.questionId)
+            if (isNaN(questionId)) {
+                return res.status(400).json({ errors: 'Invalid question ID' })
+            }
+
+            const audioPath = req.file.path
+
+            const result = await PresentationService.submitAnswer(questionId, audioPath)
+
+            res.status(200).json({
+                data: result,
+                message: "Answer submitted and analyzed successfully"
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    static async getQuestionOriginal(req: Request, res: Response, next: NextFunction) {
+        try {
+            const questionId = parseInt(req.params.questionId)
+            const result = await PresentationService.getOriginalQuestion(questionId)
+            
+            res.status(200).json({
+                data: result
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    static async getFinalFeedback(req: Request, res: Response, next: NextFunction) {
+        try {
+            const presentationId = parseInt(req.params.presentationId)
+            const result = await PresentationService.generateFinalFeedback(presentationId)
+            
+            res.status(200).json({
+                data: result
+            })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    static async update(req: Request, res: Response, next: NextFunction) {
+        try {
+            const presentationId = parseInt(req.params.presentationId)
+            const { title } = req.body
+            
+            const result = await PresentationService.update(presentationId, title)
+            res.status(200).json({ data: result })
+        } catch (e) {
+            next(e)
+        }
+    }
+
+    static async delete(req: Request, res: Response, next: NextFunction) {
+        try {
+            const presentationId = parseInt(req.params.presentationId)
+            
+            const result = await PresentationService.delete(presentationId)
+            res.status(200).json({ data: result })
         } catch (e) {
             next(e)
         }
