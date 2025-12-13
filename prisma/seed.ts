@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, UserRole } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
@@ -74,6 +74,34 @@ async function main() {
       { image_url: "avatars/avatar6.png" }, 
     ],
   });
+
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@demo.com' },
+    update: {},
+    create: {
+      username: 'SuperAdmin',
+      email: 'admin@demo.com',
+      password: 'password_rahasia_hash_nanti', 
+      image_url: '',
+      role: UserRole.ADMIN,
+      avatar_id: 1, 
+    },
+  })
+  console.log("Seeding admin completed.");
+
+  const user = await prisma.user.upsert({
+    where: { email: 'user@demo.com' },
+    update: {},
+    create: {
+      username: 'JohnDoe',
+      email: 'user@demo.com',
+      password: 'password123',
+      image_url: '',
+      role: UserRole.USER,
+      avatar_id: 2,
+    },
+  })
+  console.log("Seeding user completed.");
   console.log("Seeding completed.");
 }
 

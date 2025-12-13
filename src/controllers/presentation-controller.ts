@@ -1,112 +1,125 @@
-import { Request, Response, NextFunction } from "express"
-import { PresentationService } from "../services/presentation-service"
-import { CreatePresentationRequest } from "../models/presentation-model"
-import { UserRequest } from "../models/user-model"
-import { FeedbackService } from "../services/feedback-service"
-import { Validation } from "../validations/validation"
+import { Request, Response, NextFunction } from 'express';
+import { PresentationService } from '../services/presentation-service';
+import { FeedbackService } from '../services/feedback-service';
+import { ResponseError } from '../error/response-error';
+import { UserRequest } from '../models/user-model';
 
 export class PresentationController {
     static async create(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            if (!req.file) {
-                return res.status(400).json({
-                    errors: 'Video file is required'
-                })
-            }
+            if (!req.file) throw new ResponseError(400, "Video file is required");
 
-            if (!req.body.title) {
-                return res.status(400).json({
-                    errors: 'Title is required'
-                })
-            }
+            const userId = req.user?.id;
+            const { title } = req.body;
 
-            const request: CreatePresentationRequest = {
-                title: req.body.title,
-                user_id: req.user!.id,
+            if (!userId) throw new ResponseError(401, "Unauthorized");
+
+            const response = await PresentationService.create({
+                user_id: userId,
+                title: title || "Untitled Presentation",
                 video_url: req.file.path
-            }
+            }, req.file.path);
 
-            const response = await PresentationService.create(request, req.file.path)
-            
-            res.status(200).json({
-                data: {
-                    presentation: response
-                }
-            })
-        } catch (e) {
-            next(e)
-        }
-    }
-    
-    static async submitAnswer(req: Request, res: Response, next: NextFunction) {
-        try {
-            if (!req.file) {
-                return res.status(400).json({ errors: 'Audio file is required' })
-            }
+            res.status(201).json({
+                success: true,
+                data: response
+            });
 
-            const questionId = parseInt(req.params.questionId)
-            if (isNaN(questionId)) {
-                return res.status(400).json({ errors: 'Invalid question ID' })
-            }
-
-            const audioPath = req.file.path
-
-            const result = await PresentationService.submitAnswer(questionId, audioPath)
-            res.status(200).json({
-                data: result,
-                message: "Answer submitted and analyzed successfully"
-            })
-        } catch (e) {
-            next(e)
+        } catch (error) {
+            next(error);
         }
     }
 
     static async getAnalysis(req: Request, res: Response, next: NextFunction) {
         try {
-            const presentationId = parseInt(req.params.presentationId)
+            const presentationId = parseInt(req.params.presentationId);
+            const response = await PresentationService.getAnalysis(presentationId);
             
-            const response = await PresentationService.getAnalysis(presentationId)
             res.status(200).json({
+                success: true,
                 data: response
-            })
-        } catch (e) {
-            next(e)
+            });
+        } catch (error) {
+            next(error);
         }
     }
 
     static async getFinalFeedback(req: Request, res: Response, next: NextFunction) {
         try {
-            const presentationId = parseInt(req.params.presentationId)
+            const presentationId = parseInt(req.params.presentationId);
+            const response = await FeedbackService.generateFinalFeedback(presentationId);
             
-            const result = await FeedbackService.generateFinalFeedback(presentationId) 
             res.status(200).json({
-                data: result
-            })
-        } catch (e) {
-            next(e)
+                success: true,
+                data: response
+            });
+        } catch (error) {
+            next(error);
         }
     }
 
-    static async update(req: Request, res: Response, next: NextFunction) {
+    static async submitAnswer(req: Request, res: Response, next: NextFunction) {
         try {
-            const presentationId = parseInt(req.params.presentationId)
-            const { title, status } = req.body
+            if (!req.file) throw new ResponseError(400, "Audio file is required");
+
+            const questionId = parseInt(req.params.questionId);
             
-            const result = await PresentationService.update(presentationId, title, status)
-            res.status(200).json({ data: result })
-        } catch (e) {
-            next(e)
+            const response = await PresentationService.submitAnswer(
+                questionId, 
+                req.file.path,
+                req.file.mimetype
+            );
+
+            res.status(201).json({
+                success: true,
+                data: response
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getById(req: Request, res: Response, next: NextFunction) {
+        try {
+            const presentationId = parseInt(req.params.id);
+            const response = await PresentationService.getById(presentationId);
+            
+            res.status(200).json({
+                success: true,
+                data: response
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async list(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) throw new ResponseError(401, "Unauthorized");
+
+            const response = await PresentationService.list(userId);
+            
+            res.status(200).json({
+                success: true,
+                data: response
+            });
+        } catch (error) {
+            next(error);
         }
     }
 
     static async delete(req: Request, res: Response, next: NextFunction) {
         try {
-            const presentationId = parseInt(req.params.presentationId)
+            const presentationId = parseInt(req.params.id);
+            const response = await PresentationService.delete(presentationId);
             
-            const result = await PresentationService.delete(presentationId)
-            res.status(200).json({ data: result })
-        } catch (e) {
-            next(e)
+            res.status(200).json({
+                success: true,
+                message: response
+            });
+        } catch (error) {
+            next(error);
         }
     }
 }

@@ -8,18 +8,31 @@ datasource db {
 }
 
 model User {
-  id            Int            @id @default(autoincrement())
-  username      String         @default(cuid()) @unique
-  role          UserRole       @default(USER)
-  email         String         @unique
-  password      String
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  presentations Presentation[]
-  image_url       String
+  id               Int            @id @default(autoincrement())
+  username         String         @unique
+  role             UserRole       @default(GUEST)
+  email            String         @unique
+  password         String
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  image_url        String
   avatar_id        Int                @default(1)
   avatar           Avatar             @relation(fields: [avatar_id], references: [id])
   learningProgress LearningProgress[]
+  presentations    Presentation[]
+
+  @@map("users")
+}
+
+model Avatar {
+  id        Int      @id @default(autoincrement())
+  image_url String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+
+  @@map("avatars")
 }
 
 model Learning{
@@ -29,19 +42,12 @@ model Learning{
   video_url     String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  
 
   learningProgress LearningProgress[]
+
+  @@map("learnings")
 }
 
-
-model Avatar {
-  id        Int      @id @default(autoincrement())
-  image_url String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
-}
 
 model LearningProgress{
   id            Int            @id @default(autoincrement())
@@ -51,64 +57,96 @@ model LearningProgress{
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
-  user          User           @relation(fields: [user_id], references: [id])
-  learning      Learning       @relation(fields: [learning_id], references: [id])
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  learning      Learning       @relation(fields: [learning_id], references: [id], onDelete: Cascade)
+  
+  @@unique([user_id, learning_id])
+  @@map("learning_progresses")
 }
+
+
 
 model Presentation {
-  id        Int                @id @default(autoincrement())
-  user_id   Int
-  video_url String
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
-  status    PresentationStatus @default(ONGOING)
-  title     String
-  user      User     @relation(fields: [user_id], references: [id])
-  questions      Question[]
-  feedbacks Feedbacks[] 
-}
+  id            Int                @id @default(autoincrement())
+  user_id       Int
 
-model Feedbacks {
-  id             Int          @id @default(autoincrement())
-  presentation_id Int         
-  expression     Float     
-  intonation     Float         
-  posture        Float
-  overall_rating Float
-  suggestion      String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  video_url     String
+  title         String
+  status        PresentationStatus @default(ONGOING)
 
-  presentation   Presentation @relation(fields: [presentation_id], references: [id])
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+ 
+  user          User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  
+  questions     Question[]
+  feedbacks     Feedback[] 
+
+  @@map("presentations")
 }
 
 model Question {
-  id             Int          @id @default(autoincrement())
-  presentation_id Int         
-  question       String
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id              Int          @id @default(autoincrement())
+  presentation_id Int     
 
-  presentation   Presentation @relation(fields: [presentation_id], references: [id])
-  answers        Answer[]
+  question        String       @db.Text
+  answers         Answer[]
+
+  time_limit_seconds Int          @default(60)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  presentation    Presentation @relation(fields: [presentation_id], references: [id], onDelete: Cascade)
+
+  @@map("questions")
 }
 
 model Answer {
   id          Int      @id @default(autoincrement())
   question_id Int   
-  audio_url String
-  score     Float?
+
+  audio_url   String?
+  score       Float?
+
+  analysis    Json?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   question    Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
 
   @@map("answers")
 }
+
+model Feedback {
+  id                Int          @id @default(autoincrement())
+  presentation_id   Int   
+
+  expression        Float     
+  intonation        Float         
+  posture           Float
+
+  video_score       Float
+  audio_score       Float
+  overall_rating    Float
+  grade             String
+  
+  video_suggestion  String       @db.Text
+  audio_suggestion  String?      @db.Text
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  presentation    Presentation @relation(fields: [presentation_id], references: [id], onDelete: Cascade)
+
+  @@map("feedbacks")
+}
+
+
+
 enum PresentationStatus {
   ONGOING
   COMPLETED
   FAILED
 }
-
 
 enum LearningStatus {
   LOCKED

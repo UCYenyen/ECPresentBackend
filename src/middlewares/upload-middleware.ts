@@ -53,7 +53,7 @@ export const uploadAudio = multer({
     storage: storage,
     limits: { fileSize: 20 * 1024 * 1024 }, // Limit 20MB
     fileFilter: (req, file, cb) => {
-        const allowedExtensions = ['.mp3', '.wav', '.m4a', '.webm', '.ogg', '.aac']
+        const allowedExtensions = ['.mp3', '.wav', '.ogg', '.aac']
         const fileExtension = path.extname(file.originalname).toLowerCase()
         
         // Cek MIME type audio atau ekstensi file

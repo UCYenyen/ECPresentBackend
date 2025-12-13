@@ -7,7 +7,7 @@ export class LearningValidation {
 
     static readonly UPDATE_LEARNING_PROGRESS: ZodType = z.object({
         id: z.number({error: "Invalid learning progress ID: the learning progress you're looking for doesn't exist"}).min(1)
-    })     
+    })      
 
     static readonly GET_ALL_LEARNING_PROGRESS: ZodType = z.object({
         user_id: z.number({error: "Invalid user ID: the user you're looking for doesn't exist"}).min(1),

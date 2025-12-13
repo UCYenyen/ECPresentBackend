@@ -73,7 +73,8 @@ export class UserValidation {
       })
       .min(1, {
         error: "Avatar ID must be greater than or equal to 1!",
-      }),
+      })
+      .optional(),
     image_url: z
       .string({
         error: "Image URL must be string!",
