@@ -3,7 +3,24 @@ import { FinalFeedbackResponse } from "../models/presentation-model"
 import { ResponseError } from "../error/response-error"
 
 export class FeedbackService {
-    static async generateFinalFeedback(presentationId: number): Promise<FinalFeedbackResponse> {
+    
+    private static async checkOwnership(presentationId: number, userId: number) {
+        const presentation = await prismaClient.presentation.findFirst({
+            where: { 
+                id: presentationId, 
+                user_id: userId 
+            }
+        })
+
+        if (!presentation) {
+            throw new ResponseError(404, "Presentation not found or access denied")
+        }
+        return presentation
+    }
+
+    static async generateFinalFeedback(presentationId: number, userId: number): Promise<FinalFeedbackResponse> {
+        await this.checkOwnership(presentationId, userId)
+
         const videoFeedback = await prismaClient.feedback.findFirst({
             where: { presentation_id: presentationId }
         })
@@ -12,29 +29,16 @@ export class FeedbackService {
             throw new ResponseError(404, "Video feedback not found. Analysis may not be ready yet.")
         }
 
-        const answers = await prismaClient.answer.findMany({
+        const answer = await prismaClient.answer.findFirst({
             where: {
                 question: { presentation_id: presentationId }
             },
             include: { question: true }
         })
 
-        let totalAudioScore = 0
-        const audioSuggestions: string[] = []
-
-        answers.forEach(a => {
-            totalAudioScore += (a.score ?? 0)
-            if (a.analysis && typeof a.analysis === 'object') {
-                const analysisObj = a.analysis as any
-                if (analysisObj.suggestion) {
-                    audioSuggestions.push(analysisObj.suggestion)
-                }
-            }
-        })
-        
-        const avgAudioScore = answers.length > 0 ? (totalAudioScore / answers.length) : 0
+        const audioScore = answer?.score ?? 0
         const videoScore = videoFeedback.video_score ?? 0
-        const finalScore = (Number(videoScore) +avgAudioScore )/2
+        const finalScore = (Number(videoScore) + audioScore) / 2
 
         let finalGrade = "E"
         if (finalScore >= 90) finalGrade = "S"
@@ -43,15 +47,13 @@ export class FeedbackService {
         else if (finalScore >= 60) finalGrade = "C"
         else if (finalScore >= 50) finalGrade = "D"
 
-        const combinedAudioSuggestion = audioSuggestions.length > 0 
-            ? audioSuggestions.join(" ") 
-            : "No audio feedback available.";
+        const audioSuggestion = answer?.suggestion || "No audio feedback available."
 
-        const updatedFeedback = await prismaClient.feedback.update({
+        await prismaClient.feedback.update({
             where: { id: videoFeedback.id },
             data: {
-                audio_score: parseFloat(avgAudioScore.toFixed(2)),
-                audio_suggestion: combinedAudioSuggestion,
+                audio_score: parseFloat(audioScore.toFixed(2)),
+                audio_suggestion: audioSuggestion,
                 overall_rating: Math.round(finalScore),
                 grade: finalGrade
             }
@@ -64,15 +66,23 @@ export class FeedbackService {
 
         return {
             presentation_id: presentationId,
-            video_feedback: updatedFeedback,
-            answers_summary: answers,
-            average_audio_score: parseFloat(avgAudioScore.toFixed(2)),
-            final_calculated_score: Math.round(finalScore),
+            expression: videoFeedback.expression,
+            intonation: videoFeedback.intonation,
+            posture: videoFeedback.posture,
+            video_score: videoFeedback.video_score,
+            audio_score: parseFloat(audioScore.toFixed(2)),
+            overall_score: Math.round(finalScore),
+            grade: finalGrade,
+            video_suggestion: videoFeedback.video_suggestion,
+            audio_suggestion: audioSuggestion,
+            question: answer?.question.question || "No question available",
+            answer_audio_url: answer?.audio_url || null,
             status: "COMPLETED"
         }
     }
 
-    static async getByPresentationId(presentationId: number) {
+    static async getByPresentationId(presentationId: number, userId: number) {
+        await this.checkOwnership(presentationId, userId)
         const feedback = await prismaClient.feedback.findFirst({
             where: { presentation_id: presentationId }
         })

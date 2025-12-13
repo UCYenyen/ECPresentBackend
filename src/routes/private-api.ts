@@ -19,7 +19,7 @@ privateRouter.get("/presentations", PresentationController.list)
 privateRouter.get("/presentations/:id", PresentationController.getById)
 privateRouter.get("/presentations/:presentationId/analysis", PresentationController.getAnalysis)
 privateRouter.get("/presentations/:presentationId/feedback", PresentationController.getFinalFeedback)
-privateRouter.post("/questions/:questionId/answer", uploadAudio.single('audio'), PresentationController.submitAnswer)
+privateRouter.post("/presentations/:presentationId/answer", uploadAudio.single('audio'), PresentationController.submitAnswer)
 privateRouter.delete("/presentations/:id", PresentationController.delete)
 
 privateRouter.get("/get-my-learnings", LearningController.getAllLearningProgresses)

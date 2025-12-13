@@ -2,7 +2,7 @@ import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
 
-// Pastikan folder upload ada (PENTING: Mencegah error "Directory not found")
+
 const uploadDir = 'uploads/'
 if (!fs.existsSync(uploadDir)){
     fs.mkdirSync(uploadDir, { recursive: true });
@@ -19,17 +19,16 @@ const storage = multer.diskStorage({
 })
 
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    // Tambahkan MIME types untuk .mov files
+
     const allowedTypes = [
         'video/mp4', 
         'video/mpeg', 
-        'video/quicktime',  // .mov files
-        'video/x-msvideo',  // .avi files
+        'video/quicktime',  
+        'video/x-msvideo',  
         'video/webm',
-        'video/x-quicktime' // alternative MIME type untuk .mov
+        'video/x-quicktime' 
     ]
-    
-    // Juga check berdasarkan extension sebagai fallback
+
     const allowedExtensions = ['.mp4', '.mpeg', '.mov', '.avi', '.webm']
     const fileExtension = path.extname(file.originalname).toLowerCase()
     
@@ -44,19 +43,18 @@ export const uploadVideo = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 100 * 1024 * 1024 // 100MB
+        fileSize: 100 * 1024 * 1024 
     }
 })
 
 
 export const uploadAudio = multer({
     storage: storage,
-    limits: { fileSize: 20 * 1024 * 1024 }, // Limit 20MB
+    limits: { fileSize: 20 * 1024 * 1024 }, 
     fileFilter: (req, file, cb) => {
         const allowedExtensions = ['.mp3', '.wav', '.ogg', '.aac']
         const fileExtension = path.extname(file.originalname).toLowerCase()
-        
-        // Cek MIME type audio atau ekstensi file
+
         if (file.mimetype.startsWith('audio/') || allowedExtensions.includes(fileExtension)) {
             cb(null, true)
         } else {
