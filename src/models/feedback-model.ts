@@ -1,46 +1,35 @@
-import { Feedback } from "@prisma/client";
+import { Feedback } from "@prisma/client"
 
 export interface VideoAnalysisResult {
-    expression: number;
-    intonation: number;
-    posture: number;
-    video_score: number;
-    overall_score: number;
-    grade: string;
-    suggestion: string;
-    questions: string[];
+    expression: number
+    intonation: number
+    posture: number
+    video_score: number
+    overall_score: number
+    grade: string
+    suggestion: string
+    question: string
 }
 
 export interface AudioAnalysisResult {
-    score: number;
-    analysis: {
-        delivery: {
-            pace: "too_slow" | "ideal" | "too_fast";
-            wpm: number;
-            clarity: number;
-        };
-        fillerWords: {
-            totalCount: number;
-            distinctWords: string[];
-        };
-        suggestion: string;
-    };
+    score: number
+    suggestion: string
 }
 
 export interface FeedbackResponse {
-  id: number;
-  presentation_id: number;
-  expression: number;
-  intonation: number;
-  posture: number;
-  video_score: number;
-  audio_score: number | null;
-  overall_rating: number;
-  grade: string;
-  video_suggestion: string;
-  audio_suggestion: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  id: number
+  presentation_id: number
+  expression: number
+  intonation: number
+  posture: number
+  video_score: number
+  audio_score: number | null
+  overall_rating: number
+  grade: string
+  video_suggestion: string
+  audio_suggestion: string | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 export function toFeedbackResponse(feedback: Feedback): FeedbackResponse {
@@ -58,5 +47,5 @@ export function toFeedbackResponse(feedback: Feedback): FeedbackResponse {
     audio_suggestion: feedback.audio_suggestion,
     createdAt: feedback.createdAt,
     updatedAt: feedback.updatedAt,
-  };
+  }
 }

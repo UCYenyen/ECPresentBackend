@@ -7,96 +7,131 @@ import { ResponseError } from "../error/response-error"
 import fs from 'fs'
 
 export class PresentationService {
-    static async create(request: CreatePresentationRequest, videoPath?: string): Promise<PresentationResponse> {
-        const validation = Validation.validate(PresentationValidation.CREATE, request)
-        
-        const presentation = await prismaClient.presentation.create({
-            data: {
-                user_id: validation.user_id,
-                video_url: validation.video_url,
-                status: "ONGOING",
-                title: validation.title || "Untitled Presentation"
+    private static async checkOwnership(presentationId: number, userId: number) {
+        const presentation = await prismaClient.presentation.findFirst({
+            where: { 
+                id: presentationId,
+                user_id: userId 
             }
         })
 
-        if (videoPath) {
-            this.processVideoWithGemini(presentation.id, videoPath).catch(err => {
-                console.error("Background processing failed:", err)
-            })
+        if (!presentation) {
+            throw new ResponseError(404, "Presentation not found or access denied")
         }
-
-        return toPresentationResponse(presentation)
+        return presentation
     }
 
-    static async getAnalysis(presentationId: number): Promise<PresentationAnalysisResponse> {
-        const presentation = await prismaClient.presentation.findUnique({
-            where: { id: presentationId }
-        })
+    static async create(request: CreatePresentationRequest, videoPath?: string): Promise<PresentationResponse> {
+        const validation = Validation.validate(PresentationValidation.CREATE, request)
+        try {
+            const presentation = await prismaClient.presentation.create({
+                data: {
+                    user_id: validation.user_id,
+                    video_url: validation.video_url,
+                    status: "ONGOING",
+                    title: validation.title || "Untitled Presentation"
+                }
+            })
 
-        if (!presentation) throw new ResponseError(404, "Presentation not found")
+            if (videoPath) {
+                this.processVideoWithGemini(presentation.id, videoPath).catch(err => {
+                    console.error("Background processing failed:", err)
+                })
+            }
+            return toPresentationResponse(presentation)
+        } catch (error) {
+            if (videoPath && fs.existsSync(videoPath)) {
+                fs.unlinkSync(videoPath)
+            }
+            throw error
+        }  
+    }
+
+    static async getAnalysis(presentationId: number, userId: number): Promise<PresentationAnalysisResponse> {
+        const presentation = await this.checkOwnership(presentationId, userId)
 
         const feedback = await prismaClient.feedback.findFirst({
-            where: { presentation_id: presentationId }
+            where: { presentation_id: presentation.id }
         })
 
-        const questions = await prismaClient.question.findMany({
-            where: { presentation_id: presentationId }
+        const question = await prismaClient.question.findUnique({
+            where: { presentation_id: presentation.id },
+            include: {
+                answer: true 
+            }
         })
 
         return {
             status: presentation.status,
             feedback: feedback,
-            questions: questions
+            question: question
         }
     }
-
-    static async submitAnswer(questionId: number, audioPath: string, mimeType: string) {
+    
+    static async submitAnswer(
+        presentationId: number, 
+        audioPath: string, 
+        userId: number,
+        questionText: string 
+    ) {
         const validation = Validation.validate(PresentationValidation.SUBMIT_ANSWER, { 
-            questionId, 
-            audioPath 
+            presentationId,
+            audioPath,
+            questionText
         })
 
         const questionData = await prismaClient.question.findUnique({
-            where: { id: validation.questionId }
+            where: {
+                presentation_id: validation.presentationId
+            },
+            include: { 
+                presentation: true,
+                answer: true
+            }
         })
 
         if (!questionData) {
             if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath)
-            throw new ResponseError(404, "Question not found")
+            throw new ResponseError(404, `Question not found for this presentation`)
+        }
+
+        if (questionData.presentation.user_id !== userId) {
+            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath)
+            throw new ResponseError(403, "Access denied")
+        }
+
+        if (questionData.answer) {
+            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath)
+            throw new ResponseError(400, "You have already answered this question.")
         }
 
         try {
             const analysis = await analyzeAudioAnswerWithGemini(
                 validation.audioPath, 
-                questionData.question,
-                mimeType
+                questionData.question, 
+                questionData.presentation.video_url
             )
 
             const savedAnswer = await prismaClient.answer.create({
                 data: {
-                    question_id: validation.questionId,
+                    question_id: questionData.id,
                     audio_url: validation.audioPath,
                     score: analysis.score,
-                    analysis: analysis.analysis as any
+                    suggestion: analysis.suggestion 
                 }
             })
 
-            console.log(`[Info] Audio file kept for history: ${audioPath}`)
             return savedAnswer
+
         } catch (error) {
             console.error("Failed to analyze audio:", error)
             if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath)
-            throw error
+            throw new ResponseError(500, "AI Analysis failed")
         }
     }
 
-    static async getById(presentationId: number): Promise<PresentationResponse> {
-        const presentation = await prismaClient.presentation.findUnique({
-            where: { id: presentationId }
-        })
-
-        if (!presentation) throw new ResponseError(404, "Presentation not found")
-
+    static async getById(presentationId: number, userId: number): Promise<PresentationResponse> {
+        const presentation = await this.checkOwnership(presentationId, userId)
         return toPresentationResponse(presentation)
     }
 
@@ -109,18 +144,14 @@ export class PresentationService {
         return presentations.map(toPresentationResponse)
     }
 
-    static async update(presentationId: number, title?: string, status?: "ONGOING" | "COMPLETED" | "FAILED") {
+    static async update(presentationId: number, userId: number, title?: string, status?: "ONGOING" | "COMPLETED" | "FAILED") {
         const validation = Validation.validate(PresentationValidation.UPDATE, { 
             id: presentationId, 
             title, 
             status 
         })
         
-        const check = await prismaClient.presentation.findUnique({ 
-            where: { id: validation.id } 
-        })
-        
-        if (!check) throw new ResponseError(404, "Presentation not found")
+        await this.checkOwnership(presentationId, userId)
 
         const updated = await prismaClient.presentation.update({
             where: { id: validation.id },
@@ -133,19 +164,22 @@ export class PresentationService {
         return toPresentationResponse(updated)
     }
 
-    static async delete(presentationId: number): Promise<string> {
-        const presentation = await prismaClient.presentation.findUnique({ 
-            where: { id: presentationId },
+    static async delete(presentationId: number, userId: number): Promise<string> {
+        const presentation = await prismaClient.presentation.findFirst({ 
+            where: { 
+                id: presentationId,
+                user_id: userId 
+            },
             include: {
-                questions: {
+                question: {
                     include: {
-                        answers: true
+                        answer: true
                     }
                 }
             }
         })
         
-        if (!presentation) throw new ResponseError(404, "Presentation not found")
+        if (!presentation) throw new ResponseError(404, "Presentation not found or access denied")
 
         if (presentation.video_url && fs.existsSync(presentation.video_url)) {
             try {
@@ -155,18 +189,19 @@ export class PresentationService {
                 console.error(`[Cleanup] Failed to delete video: ${error}`)
             }
         }
-        presentation.questions.forEach(q => {
-            q.answers.forEach(a => {
-                if (a.audio_url && fs.existsSync(a.audio_url)) {
-                    try {
-                        fs.unlinkSync(a.audio_url)
-                        console.log(`[Cleanup] Audio deleted: ${a.audio_url}`)
-                    } catch (error) {
-                        console.error(`[Cleanup] Failed to delete audio: ${error}`)
-                    }
+
+        if (presentation.question?.answer?.audio_url) {
+            const audioPath = presentation.question.answer.audio_url
+            if (fs.existsSync(audioPath)) {
+                try {
+                    fs.unlinkSync(audioPath)
+                    console.log(`[Cleanup] Audio deleted: ${audioPath}`)
+                } catch (error) {
+                    console.error(`[Cleanup] Failed to delete audio: ${error}`)
                 }
-            })
-        })
+            }
+        }
+        
         await prismaClient.presentation.delete({
             where: { id: presentationId }
         })
@@ -188,20 +223,20 @@ export class PresentationService {
                         posture: analysis.posture,
                         video_score: analysis.video_score,
                         audio_score: 0,
-                        audio_suggestion: null,
                         overall_rating: analysis.overall_score,
                         grade: analysis.grade,
-                        video_suggestion: analysis.suggestion
+                        video_suggestion: analysis.suggestion,
+                        audio_suggestion: null 
                     }
                 })
 
-                if (analysis.questions && analysis.questions.length > 0) {
-                    await tx.question.createMany({
-                        data: analysis.questions.map(q => ({
+                if (analysis.question) {
+                    await tx.question.create({
+                        data: {
                             presentation_id: presentationId,
-                            question: q,
+                            question: analysis.question,
                             time_limit_seconds: 60
-                        }))
+                        }
                     })
                 }
 
@@ -212,10 +247,8 @@ export class PresentationService {
             })
 
             console.log(`[Background] Success analyzing presentation #${presentationId}`)
-            console.log(`[Info] Video file kept for history: ${videoPath}`)
         } catch (error) {
             console.error(`[Background] Failed analyzing presentation #${presentationId}:`, error)
-            
             await prismaClient.presentation.update({
                 where: { id: presentationId },
                 data: { status: "FAILED" }
