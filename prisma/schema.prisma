@@ -10,16 +10,13 @@ datasource db {
 model User {
   id               Int            @id @default(autoincrement())
   username         String         @unique
+  role             UserRole       @default(GUEST)
   email            String         @unique
   password         String
-  role             UserRole       @default(GUEST)
-  
-  image_url        String
-  avatar_id        Int            @default(1)
-  
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-
+  image_url        String
+  avatar_id        Int                @default(1)
   avatar           Avatar             @relation(fields: [avatar_id], references: [id])
   learningProgress LearningProgress[]
   presentations    Presentation[]
@@ -38,7 +35,7 @@ model Avatar {
   @@map("avatars")
 }
 
-model Learning {
+model Learning{
   id            Int            @id @default(autoincrement())
   title         String
   description   String
@@ -51,7 +48,8 @@ model Learning {
   @@map("learnings")
 }
 
-model LearningProgress {
+
+model LearningProgress{
   id            Int            @id @default(autoincrement())
   user_id       Int
   learning_id   Int
@@ -67,6 +65,7 @@ model LearningProgress {
 }
 
 
+
 model Presentation {
   id            Int                @id @default(autoincrement())
   user_id       Int
@@ -80,46 +79,39 @@ model Presentation {
  
   user          User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
   
-  question      Question? 
-
-  feedback      Feedback? 
+  questions     Question[]
+  feedbacks     Feedback[] 
 
   @@map("presentations")
 }
 
 model Question {
   id              Int          @id @default(autoincrement())
-  
-  presentation_id Int          @unique 
-  
-  // sequence_number Int       
+  presentation_id Int     
 
   question        String       @db.Text
-  time_limit_seconds Int       @default(60)
+  answers         Answer[]
+
+  time_limit_seconds Int          @default(60)
 
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   presentation    Presentation @relation(fields: [presentation_id], references: [id], onDelete: Cascade)
-  
-  answer          Answer?
 
   @@map("questions")
 }
 
 model Answer {
   id          Int      @id @default(autoincrement())
-  
-  question_id Int      @unique   
+  question_id Int   
 
   audio_url   String?
   score       Float?
-  
-  suggestion  String?   @db.Text
-  
+
+  analysis    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
   question    Question @relation(fields: [question_id], references: [id], onDelete: Cascade)
 
   @@map("answers")
@@ -127,8 +119,7 @@ model Answer {
 
 model Feedback {
   id                Int          @id @default(autoincrement())
-  
-  presentation_id   Int          @unique   
+  presentation_id   Int   
 
   expression        Float     
   intonation        Float         
@@ -141,15 +132,13 @@ model Feedback {
   
   video_suggestion  String       @db.Text
   audio_suggestion  String?      @db.Text
-  
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  presentation      Presentation @relation(fields: [presentation_id], references: [id], onDelete: Cascade)
+  presentation    Presentation @relation(fields: [presentation_id], references: [id], onDelete: Cascade)
 
   @@map("feedbacks")
 }
-
 
 enum PresentationStatus {
   ONGOING

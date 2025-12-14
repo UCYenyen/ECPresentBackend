@@ -12,7 +12,7 @@ export interface UserJWTPayload {
   image_url?: string;
 }
 export interface RegisterUserRequest {
-  userId?: number;
+  user_id?: number;
   username: string;
   email: string;
   password: string;

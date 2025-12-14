@@ -24,15 +24,15 @@ export class UserController {
     static async registerFromGuest(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const request: RegisterUserRequest = req.body as RegisterUserRequest
-            const userId = req.user?.id
+            const user_id = req.user?.id
             
-            if (!userId || !req.user?.role || req.user.role !== "GUEST") {
+            if (!user_id || !req.user?.role || req.user.role !== "GUEST") {
                 throw new Error("Only guest users can use this endpoint")
             }
 
             const response: UserResponse = await UserService.register({
                 ...request,
-                userId,
+                user_id,
             })
 
             res.status(200).json({
@@ -69,8 +69,8 @@ export class UserController {
     }
     static async getProfile(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const userId = req.user?.id
-            const response: UserResponse = await UserService.getUserById(userId!)
+            const user_id = req.user?.id
+            const response: UserResponse = await UserService.getUserById(user_id!)
 
             res.status(200).json({
                 data: response,
@@ -82,9 +82,9 @@ export class UserController {
 
     static async updateProfile(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const userId = req.user?.id
+            const user_id = req.user?.id
             const request = req.body
-            const response: UserResponse = await UserService.updateUserById(userId!, request)
+            const response: UserResponse = await UserService.updateUserById(user_id!, request)
 
             res.status(200).json({
                 data: response,

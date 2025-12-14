@@ -32,10 +32,9 @@ export class UserService {
 
         validatedData.password = await bcrypt.hash(validatedData.password, 10)
 
-        // Jika ada userId (guest user), update user tersebut
-        if (request.userId) {
+        if (request.user_id) {
             const existingUser = await prismaClient.user.findUnique({
-                where: { id: request.userId },
+                where: { id: request.user_id },
             })
 
             if (!existingUser || existingUser.role !== UserRole.GUEST) {
@@ -50,7 +49,7 @@ export class UserService {
                     role: UserRole.USER,
                 },
                 where: {
-                    id: request.userId,
+                    id: request.user_id,
                 },
             })
 
@@ -109,9 +108,9 @@ export class UserService {
         return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
     }
 
-    static async getUserById(userId: number): Promise<UserResponse> {
+    static async getUserById(user_id: number): Promise<UserResponse> {
         const user = await prismaClient.user.findUnique({
-            where: { id: userId },
+            where: { id: user_id },
         })
         if (!user) {
             throw new ResponseError(404, "User not found")
@@ -120,7 +119,7 @@ export class UserService {
     }
 
     static async updateUserById(
-        userId: number,
+        user_id: number,
         updateData: UpdateUserRequest
     ): Promise<UserResponse> {
         const validatedData = Validation.validate(
@@ -133,13 +132,13 @@ export class UserService {
         }   
 
         const user = await prismaClient.user.findUnique({
-            where: { id: userId },
+            where: { id: user_id },
         })
         if (!user) {
             throw new ResponseError(404, "User not found")
         }
         const updatedUser = await prismaClient.user.update({
-            where: { id: userId },
+            where: { id: user_id },
             data: {
                 username: validatedData.username || user.username,
                 email: validatedData.email || user.email,
