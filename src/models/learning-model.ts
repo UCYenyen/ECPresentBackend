@@ -1,5 +1,5 @@
 import { string } from "zod"
-import { Learning } from "@prisma/client";
+import { Learning, LearningStatus } from "@prisma/client";
 
 export interface LearningResponse{
     id: number;
@@ -14,7 +14,7 @@ export interface LearningProgressResponse{
     id: number;
     user_id: number;
     learning_id: number;
-    status: "LOCKED" | "ONPROGRESS" | "COMPLETED";
+    status: LearningStatus;
     createdAt: Date;
     updatedAt: Date;
 }
