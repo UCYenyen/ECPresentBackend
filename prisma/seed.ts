@@ -66,12 +66,9 @@ async function main() {
 
   const avatar = await prisma.avatar.createMany({
     data: [
-      { image_url: "avatars/avatar1.png" },
-      { image_url: "avatars/avatar2.png" },
-      { image_url: "avatars/avatar3.png" },
-      { image_url: "avatars/avatar4.png" },
-      { image_url: "avatars/avatar5.png" },
-      { image_url: "avatars/avatar6.png" }, 
+      { image_url: "../uploads/avatar1.jpg" },
+      { image_url: "../uploads/avatar2.jpg" },
+      { image_url: "../uploads/avatar3.jpg" },
     ],
   });
 

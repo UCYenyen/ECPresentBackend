@@ -53,7 +53,7 @@ export class UserService {
                 },
             })
 
-            return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
+            return toUserResponse(user.id, user.username, user.email, 1, user.image_url, user.role)
         }
 
         // Jika tidak ada userId, create user baru
@@ -66,7 +66,7 @@ export class UserService {
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
+        return toUserResponse(user.id, user.username, user.email, 1, user.image_url, user.role)
     }
 
     static async login(request: LoginUserRequest): Promise<UserResponse> {
@@ -105,7 +105,7 @@ export class UserService {
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
+        return toUserResponse(user.id, user.username, user.email, 1, user.image_url, user.role)
     }
 
     static async getUserById(user_id: number): Promise<UserResponse> {
