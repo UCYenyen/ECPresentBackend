@@ -24,7 +24,6 @@ export const authMiddleware = (
 
         req.user = payload
 
-        // Auto-refresh token untuk guest user
         if (payload.role === "GUEST") {
             const decodedToken = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
             const expiryTime = decodedToken.exp * 1000
@@ -32,7 +31,6 @@ export const authMiddleware = (
             const timeUntilExpiry = expiryTime - currentTime
             const oneDayInMs = 24 * 60 * 60 * 1000
 
-            // Jika token akan expired dalam 1 hari, generate token baru
             if (timeUntilExpiry < oneDayInMs) {
                 const newToken = generateToken(
                     {
@@ -43,10 +41,9 @@ export const authMiddleware = (
                         avatar_id: payload.avatar_id,
                         image_url: payload.image_url
                     },
-                    "7d" // 7 hari untuk guest
+                    "7d"
                 )
                 
-                // Kirim token baru via response header
                 res.setHeader('X-New-Token', newToken)
                 console.log(`Guest token refreshed for user ${payload.id}`)
             }

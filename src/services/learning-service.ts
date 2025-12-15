@@ -9,34 +9,18 @@ import { LearningValidation } from "../validations/learning-validation";
 import { ResponseError } from "../error/response-error";
 
 export class LearningService {
-  static async getLearningProgress(
-    userId: number
-  ): Promise<LearningProgressResponse[]> {
-    const validatedData = Validation.validate(LearningValidation.GET_ALL, {
-      user_id: userId,
-    });
-
-    const learningProgressData = await prismaClient.learningProgress.findMany({
-      where: { user_id: validatedData.user_id },
-      include: {
-        learning: true,
-      },
-    });
-    return learningProgressData.map((lp) => toLearningProgressResponse(lp));
-  }
-
   static async getAllLearningProgresses(
     user_id: number
   ): Promise<LearningProgressResponse[]> {
     const validatedData = Validation.validate(LearningValidation.GET_ALL, {
-      user_id: user_id,
+      id: user_id,
     });
     const learningProgressData = await prismaClient.learningProgress.findMany({
       include: {
         learning: true,
       },
       where: {
-        user_id: validatedData.user_id,
+        user_id: validatedData.id,
       },
     });
     return learningProgressData.map((lp) => toLearningProgressResponse(lp));
@@ -115,4 +99,23 @@ export class LearningService {
 
     return toLearningProgressResponse(learningProgressData);
   }
+
+  static async getLearningById(id: number): Promise<LearningResponse> {
+    const learningData = await prismaClient.learning.findUnique({
+      where: { id: id },
+    });
+
+    if (!learningData) {
+      throw new ResponseError(404, "Learning not found");
+    }
+
+    return {
+      id: learningData.id,
+      title: learningData.title,
+      description: learningData.description,
+      video_url: learningData.video_url,
+      createdAt: learningData.createdAt,
+      updatedAt: learningData.updatedAt,
+    };
+  } 
 }
