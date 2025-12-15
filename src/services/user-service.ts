@@ -110,7 +110,7 @@ export class UserService {
 
     static async getUserById(user_id: number): Promise<UserResponse> {
         const user = await prismaClient.user.findUnique({
-            where: { id: user_id },
+            where: { id: user_id }, include: { avatar: true },
         })
         if (!user) {
             throw new ResponseError(404, "User not found")

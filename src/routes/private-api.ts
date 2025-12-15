@@ -13,6 +13,7 @@ privateRouter.use(authMiddleware)
 privateRouter.post("/register-from-guest", UserController.registerFromGuest)
 privateRouter.get("/get-profile", UserController.getProfile)
 privateRouter.put("/update-profile", UserController.updateProfile)
+privateRouter.get("/get-user-avatar/:id", AvatarController.get)
 
 privateRouter.post("/presentations", uploadVideo.single('video'), PresentationController.create)
 privateRouter.get("/presentations", PresentationController.list)

@@ -1,88 +1,107 @@
 import { prismaClient } from "../utils/database-util";
-import { AvatarResponse, CreateAvatarRequest, UpdateAvatarRequest } from "../models/user-model";
+import {
+  AvatarResponse,
+  CreateAvatarRequest,
+  UpdateAvatarRequest,
+} from "../models/user-model";
 import { ResponseError } from "../error/response-error";
 import { CloudinaryUtil } from "../utils/cloudinary-util";
 import { AvatarValidation } from "../validations/avatar-validation";
 import { Validation } from "../validations/validation";
 
 export class AvatarService {
-    static async create(request: CreateAvatarRequest): Promise<AvatarResponse> {
-        if (!request.file) {
-            throw new ResponseError(400, "Image file is required")
-        }
-
-        const imageUrl = await CloudinaryUtil.uploadFile(request.file.path)
-
-        const avatar = await prismaClient.avatar.create({
-            data: {
-                image_url: imageUrl
-            }
-        })
-
-        return avatar
+  static async create(request: CreateAvatarRequest): Promise<AvatarResponse> {
+    if (!request.file) {
+      throw new ResponseError(400, "Image file is required");
     }
 
-    static async list(): Promise<AvatarResponse[]> {
-        const avatars = await prismaClient.avatar.findMany()
-        return avatars
+    const imageUrl = await CloudinaryUtil.uploadFile(request.file.path);
+
+    const avatar = await prismaClient.avatar.create({
+      data: {
+        image_url: imageUrl,
+      },
+    });
+
+    return avatar;
+  }
+
+  static async list(): Promise<AvatarResponse[]> {
+    const avatars = await prismaClient.avatar.findMany();
+    return avatars;
+  }
+
+  static async get(id: number): Promise<AvatarResponse> {
+    const avatar = await prismaClient.avatar.findUnique({
+      where: { id: id },
+    });
+
+    if (!avatar) {
+      throw new ResponseError(404, "Avatar not found");
     }
 
-    static async get(id: number): Promise<AvatarResponse> {
-        const avatar = await prismaClient.avatar.findUnique({
-            where: { id: id }
-        })
+    return avatar;
+  }
 
-        if (!avatar) {
-            throw new ResponseError(404, "Avatar not found")
-        }
+  static async getUserAvatar(user_id: number): Promise<AvatarResponse> {
+    const user = await prismaClient.user.findUnique({
+      where: { id: user_id },
+      include: { avatar: true },
+    });
 
-        return avatar
+    if (!user || !user.avatar) {
+      throw new ResponseError(404, "User or Avatar not found");
     }
 
-    static async update(request: UpdateAvatarRequest): Promise<AvatarResponse> {
-        const validatedRequest = Validation.validate(AvatarValidation.UPDATE, { id: request.id })
+    return user.avatar;
+  }
 
-        const checkAvatar = await prismaClient.avatar.findUnique({
-            where: { id: validatedRequest.id }
-        })
+  static async update(request: UpdateAvatarRequest): Promise<AvatarResponse> {
+    const validatedRequest = Validation.validate(AvatarValidation.UPDATE, {
+      id: request.id,
+    });
 
-        if (!checkAvatar) {
-            // Hapus file yang baru diupload jika id tidak valid
-            if (request.file) {
-                await CloudinaryUtil.uploadFile(request.file.path) // Ini trick untuk cleanup lokal via util, tapi idealnya fs.unlink
-            }
-            throw new ResponseError(404, "Avatar not found")
-        }
+    const checkAvatar = await prismaClient.avatar.findUnique({
+      where: { id: validatedRequest.id },
+    });
 
-        let imageUrl = checkAvatar.image_url
-
-        if (request.file) {
-            imageUrl = await CloudinaryUtil.uploadFile(request.file.path)
-        }
-
-        const avatar = await prismaClient.avatar.update({
-            where: { id: validatedRequest.id },
-            data: {
-                image_url: imageUrl
-            }
-        })
-
-        return avatar
+    if (!checkAvatar) {
+      // Hapus file yang baru diupload jika id tidak valid
+      if (request.file) {
+        await CloudinaryUtil.uploadFile(request.file.path); // Ini trick untuk cleanup lokal via util, tapi idealnya fs.unlink
+      }
+      throw new ResponseError(404, "Avatar not found");
     }
 
-    static async delete(id: number): Promise<string> {
-        const checkAvatar = await prismaClient.avatar.findUnique({
-            where: { id: id }
-        })
+    let imageUrl = checkAvatar.image_url;
 
-        if (!checkAvatar) {
-            throw new ResponseError(404, "Avatar not found")
-        }
-
-        await prismaClient.avatar.delete({
-            where: { id: id }
-        })
-
-        return "Avatar deleted successfully"
+    if (request.file) {
+      imageUrl = await CloudinaryUtil.uploadFile(request.file.path);
     }
+
+    const avatar = await prismaClient.avatar.update({
+      where: { id: validatedRequest.id },
+      data: {
+        image_url: imageUrl,
+      },
+    });
+
+    return avatar;
+  }
+
+  static async delete(id: number): Promise<string> {
+    const checkAvatar = await prismaClient.avatar.findUnique({
+      where: { id: id },
+    });
+
+    if (!checkAvatar) {
+      throw new ResponseError(404, "Avatar not found");
+    }
+
+    await prismaClient.avatar.delete({
+      where: { id: id },
+    });
+
+    return "Avatar deleted successfully";
+  }
 }
