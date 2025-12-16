@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express"
 import { LearningProgressResponse, LearningResponse } from "../models/learning-model"
 import { LearningService } from "../services/learning-service"
 import { UserRequest } from "../models/user-model"
+import { parse } from "path"
 
 export class LearningController {
     static async getLearningById(req: Request, res: Response, next: NextFunction) {
@@ -56,7 +57,7 @@ export class LearningController {
 
     static async startLearning(req: UserRequest, res: Response, next: NextFunction) {
         try {
-            const userId = Number(req.user?.id)
+            const userId = parseInt(req.user?.id.toString() || "")
             const learningId = parseInt(req.params.id)
             const response: LearningProgressResponse = await LearningService.startLearning(userId, learningId)
 

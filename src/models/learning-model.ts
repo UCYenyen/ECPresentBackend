@@ -13,20 +13,20 @@ export interface LearningResponse{
 export interface LearningProgressResponse{
     id: number;
     user_id: number;
-    learning_id: number;
     status: LearningStatus;
     createdAt: Date;
     updatedAt: Date;
+    learning: Learning;
 }
 
 export function toLearningProgressResponse(learningProgress: LearningProgressResponse): LearningProgressResponse{
     return {
         id: learningProgress.id,
         user_id: learningProgress.user_id,
-        learning_id: learningProgress.learning_id,
         status: learningProgress.status,
         createdAt: learningProgress.createdAt,
         updatedAt: learningProgress.updatedAt,
+        learning: learningProgress.learning,
     }
 }
 

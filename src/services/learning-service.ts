@@ -55,6 +55,9 @@ export class LearningService {
         learning_id: validatedData.learning_id,
         status: "ONPROGRESS",
       },
+      include:{
+        learning: true
+      }
     });
 
     return toLearningProgressResponse(learningProgress);
@@ -72,6 +75,9 @@ export class LearningService {
     const updateLeearningProgress = await prismaClient.learningProgress.update({
       where: { id: validatedData.id },
       data: { status: "COMPLETED" },
+      include:{
+        learning: true
+      }
     });
 
     return toLearningProgressResponse(updateLeearningProgress);
