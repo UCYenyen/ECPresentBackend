@@ -71,13 +71,11 @@ export class PresentationService {
     static async submitAnswer(
         presentationId: number, 
         audioPath: string, 
-        userId: number,
-        questionText: string 
+        userId: number, 
     ) {
         const validation = Validation.validate(PresentationValidation.SUBMIT_ANSWER, { 
             presentationId,
-            audioPath,
-            questionText
+            audioPath
         })
 
         const questionData = await prismaClient.question.findUnique({
