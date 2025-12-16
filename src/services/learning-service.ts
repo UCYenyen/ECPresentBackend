@@ -72,6 +72,7 @@ export class LearningService {
         id: learning_progress_id,
       }
     );
+
     const updateLeearningProgress = await prismaClient.learningProgress.update({
       where: { id: validatedData.id },
       data: { status: "COMPLETED" },
