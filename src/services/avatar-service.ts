@@ -10,6 +10,8 @@ import { AvatarValidation } from "../validations/avatar-validation";
 import { Validation } from "../validations/validation";
 
 export class AvatarService {
+  // ==================== CRUD AVATAR (ADMIN) ====================
+
   static async create(request: CreateAvatarRequest): Promise<AvatarResponse> {
     if (!request.file) {
       throw new ResponseError(400, "Image file is required");
@@ -43,19 +45,6 @@ export class AvatarService {
     return avatar;
   }
 
-  static async getUserAvatar(user_id: number): Promise<AvatarResponse> {
-    const user = await prismaClient.user.findUnique({
-      where: { id: user_id },
-      include: { avatar: true },
-    });
-
-    if (!user || !user.avatar) {
-      throw new ResponseError(404, "User or Avatar not found");
-    }
-
-    return user.avatar;
-  }
-
   static async update(request: UpdateAvatarRequest): Promise<AvatarResponse> {
     const validatedRequest = Validation.validate(AvatarValidation.UPDATE, {
       id: request.id,
@@ -66,10 +55,6 @@ export class AvatarService {
     });
 
     if (!checkAvatar) {
-      // Hapus file yang baru diupload jika id tidak valid
-      if (request.file) {
-        await CloudinaryUtil.uploadFile(request.file.path); // Ini trick untuk cleanup lokal via util, tapi idealnya fs.unlink
-      }
       throw new ResponseError(404, "Avatar not found");
     }
 
@@ -98,10 +83,77 @@ export class AvatarService {
       throw new ResponseError(404, "Avatar not found");
     }
 
+    // Cek apakah ada user yang pakai avatar ini
+    const usersUsingAvatar = await prismaClient.user.count({
+      where: { avatar_id: id },
+    });
+
+    if (usersUsingAvatar > 0) {
+      throw new ResponseError(400, "Cannot delete avatar, still used by users");
+    }
+
     await prismaClient.avatar.delete({
       where: { id: id },
     });
 
     return "Avatar deleted successfully";
+  }
+
+  // ==================== HELPER FUNCTIONS ====================
+
+  static async getRandomAvatarId(): Promise<number> {
+    const avatars = await prismaClient.avatar.findMany({
+      select: { id: true },
+    });
+
+    if (avatars.length === 0) {
+      throw new ResponseError(500, "No avatars available in database");
+    }
+
+    const randomIndex = Math.floor(Math.random() * avatars.length);
+    return avatars[randomIndex].id;
+  }
+
+  // ==================== USER AVATAR FUNCTIONS ====================
+
+  static async getUserAvatar(user_id: number): Promise<AvatarResponse> {
+    const user = await prismaClient.user.findUnique({
+      where: { id: user_id },
+      include: { avatar: true },
+    });
+
+    if (!user || !user.avatar) {
+      throw new ResponseError(404, "User or Avatar not found");
+    }
+
+    return user.avatar;
+  }
+
+  static async updateUserAvatar(
+    user_id: number,
+    avatar_id: number
+  ): Promise<AvatarResponse> {
+    const avatar = await prismaClient.avatar.findUnique({
+      where: { id: avatar_id },
+    });
+
+    if (!avatar) {
+      throw new ResponseError(404, "Avatar not found");
+    }
+
+    await prismaClient.user.update({
+      where: { id: user_id },
+      data: {
+        avatar_id: avatar_id,
+        image_url: avatar.image_url,
+      },
+    });
+
+    return avatar;
+  }
+
+  static async resetUserAvatar(user_id: number): Promise<AvatarResponse> {
+    const randomAvatarId = await this.getRandomAvatarId();
+    return await this.updateUserAvatar(user_id, randomAvatarId);
   }
 }
