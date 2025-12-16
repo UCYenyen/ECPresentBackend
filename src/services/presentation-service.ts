@@ -207,6 +207,18 @@ export class PresentationService {
         return "Presentation deleted successfully"
     }
 
+    static async updateNotes(userId: number, presentationId: number, notes: string) {
+        await this.checkOwnership(presentationId, userId);
+
+        const updatedPresentation = await prismaClient.presentation.update({
+            where: { id: presentationId },
+            data: { personal_notes: notes }
+        });
+
+        return toPresentationResponse(updatedPresentation);
+
+    }
+
     private static async processVideoWithGemini(presentationId: number, videoPath: string): Promise<void> {
         try {
             console.log(`[Background] Start analyzing presentation #${presentationId}`)

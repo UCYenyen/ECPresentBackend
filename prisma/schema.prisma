@@ -75,6 +75,8 @@ model Presentation {
   title         String
   status        PresentationStatus @default(ONGOING)
 
+  personal_notes String?           @db.Text
+
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
  
