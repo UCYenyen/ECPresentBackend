@@ -55,7 +55,7 @@ model LearningProgress {
   id            Int            @id @default(autoincrement())
   user_id       Int
   learning_id   Int
-  status        LearningStatus @default(LOCKED)
+  status        LearningStatus @default(ONPROGRESS)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -74,6 +74,8 @@ model Presentation {
   video_url     String
   title         String
   status        PresentationStatus @default(ONGOING)
+
+  personal_notes String?           @db.Text
 
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
@@ -158,7 +160,6 @@ enum PresentationStatus {
 }
 
 enum LearningStatus {
-  LOCKED
   ONPROGRESS
   COMPLETED
 }

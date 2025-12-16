@@ -58,13 +58,13 @@ export interface FinalFeedbackResponse {
   intonation: number
   posture: number
   video_score: number
-  audio_score: number
-  overall_score: number
-  grade: string
+  audio_score: number | null
+  overall_rating: number | null
+  grade: string | null
   video_suggestion: string
   audio_suggestion: string | null
   question: string
-  answer_audio_url: string | null
+  audio_url: string | null 
   status: string
 }
 
@@ -99,5 +99,27 @@ export function toQuestionResponse(question: Question, answer?: Answer): Questio
     time_limit_seconds: question.time_limit_seconds,
     answer: answer ? toAnswerResponse(answer) : undefined,
     createdAt: question.createdAt,
+  }
+}
+
+export function toFinalFeedbackResponse(
+  feedback: Feedback, 
+  questionText: string, 
+  audioUrl: string | null
+): FinalFeedbackResponse {
+  return {
+    presentation_id: feedback.presentation_id,
+    expression: feedback.expression,
+    intonation: feedback.intonation,
+    posture: feedback.posture,
+    video_score: feedback.video_score,
+    audio_score: feedback.audio_score,
+    overall_rating: feedback.overall_rating,
+    grade: feedback.grade,
+    video_suggestion: feedback.video_suggestion,
+    audio_suggestion: feedback.audio_suggestion,
+    question: questionText,
+    audio_url: audioUrl, 
+    status: "COMPLETED"
   }
 }

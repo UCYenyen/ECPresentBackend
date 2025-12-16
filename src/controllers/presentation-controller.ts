@@ -82,12 +82,8 @@ export class PresentationController {
 
             const presentationId = PresentationController.validateId(req.params.presentationId)
 
-            const response = await PresentationService.submitAnswer(
-                presentationId, 
-                req.file.path,
-                userId
-            )
-
+            const response = await FeedbackService.generateFinalFeedback(presentationId, userId)
+            
             res.status(201).json({
                 success: true,
                 data: response
@@ -146,6 +142,23 @@ export class PresentationController {
             })
         } catch (error) {
             next(error)
+        }
+    }
+
+
+    static async updateNotes(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user?.id
+            if (!userId) throw new ResponseError(401, "Unauthorized")
+            const presentationId = parseInt(req.params.presentationId);
+            const { notes } = req.body; 
+            
+            const response = await PresentationService.updateNotes(userId!, presentationId, notes);
+            res.status(200).json({
+                data: response
+            });
+        } catch (e) {
+            next(e);
         }
     }
 }

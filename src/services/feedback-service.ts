@@ -1,5 +1,5 @@
 import { prismaClient } from "../utils/database-util"
-import { FinalFeedbackResponse } from "../models/presentation-model"
+import { FinalFeedbackResponse, toFinalFeedbackResponse } from "../models/presentation-model"
 import { ResponseError } from "../error/response-error"
 
 export class FeedbackService {
@@ -49,7 +49,7 @@ export class FeedbackService {
 
         const audioSuggestion = answer?.suggestion || "No audio feedback available."
 
-        await prismaClient.feedback.update({
+        const updatedFeedback = await prismaClient.feedback.update({
             where: { id: videoFeedback.id },
             data: {
                 audio_score: parseFloat(audioScore.toFixed(2)),
@@ -64,21 +64,8 @@ export class FeedbackService {
             data: { status: "COMPLETED" }
         })
 
-        return {
-            presentation_id: presentationId,
-            expression: videoFeedback.expression,
-            intonation: videoFeedback.intonation,
-            posture: videoFeedback.posture,
-            video_score: videoFeedback.video_score,
-            audio_score: parseFloat(audioScore.toFixed(2)),
-            overall_score: Math.round(finalScore),
-            grade: finalGrade,
-            video_suggestion: videoFeedback.video_suggestion,
-            audio_suggestion: audioSuggestion,
-            question: answer?.question.question || "No question available",
-            answer_audio_url: answer?.audio_url || null,
-            status: "COMPLETED"
-        }
+        return  toFinalFeedbackResponse(updatedFeedback, answer?.question.question || "No question available", answer?.audio_url || null)
+    
     }
 
     static async getByPresentationId(presentationId: number, userId: number) {
