@@ -82,9 +82,6 @@ export class PresentationController {
 
             const presentationId = PresentationController.validateId(req.params.presentationId)
 
-            const { questionText } = req.body
-            if (!questionText) throw new ResponseError(400, "Question text is required")
-
             const response = await PresentationService.submitAnswer(
                 presentationId, 
                 req.file.path,
