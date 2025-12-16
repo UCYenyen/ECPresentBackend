@@ -7,5 +7,6 @@ export const publicRouter = express.Router()
 publicRouter.post("/register", UserController.register)
 publicRouter.post("/login", UserController.login)
 publicRouter.post("/guest", UserController.guest)
-publicRouter.get("/get-all-learnings", LearningController.getAllLearnings)
+publicRouter.get("/getAllLearnings", LearningController.getAllLearnings)
+publicRouter.get("/getLearning/:id", LearningController.getLearningById)
 

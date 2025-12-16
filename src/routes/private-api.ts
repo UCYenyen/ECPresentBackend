@@ -23,9 +23,10 @@ privateRouter.get("/presentations/:presentationId/feedback", PresentationControl
 privateRouter.post("/presentations/:presentationId/answer", uploadAudio.single('audio'), PresentationController.submitAnswer)
 privateRouter.delete("/presentations/:id", PresentationController.delete)
 
-privateRouter.get("/get-my-learnings", LearningController.getAllLearningProgresses)
-privateRouter.get("/get-learning/:id", LearningController.getLearningProgress)
-privateRouter.post("/start-learning", LearningController.startLearning)
+privateRouter.get("/myLearningProgresses", LearningController.getAllLearningProgresses)
+privateRouter.get("/myLearningProgress/:id", LearningController.getLearningProgress)
+privateRouter.post("/startLearning/:id", LearningController.startLearning)
+privateRouter.put("/completeLearning/:id", LearningController.completeLearning)
 
 
 privateRouter.post("/avatar", uploadImage.single('image'), AvatarController.create)

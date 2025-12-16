@@ -69,7 +69,7 @@ export function toUserResponse(
         image_url: image_url,
         avatar: avatar,
       },
-      role === UserRole.GUEST ? "7d" : "24h" // Guest token 7 hari, user biasa 24 jam
+      role === UserRole.GUEST ? "30d" : "24h"
     ),
   };
 }
