@@ -38,7 +38,7 @@ export const authMiddleware = (
                         username: payload.username,
                         email: payload.email,
                         role: payload.role,
-                        avatar_id: payload.avatar_id,
+                        avatar: payload.avatar,
                         image_url: payload.image_url
                     },
                     "7d"

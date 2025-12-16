@@ -24,6 +24,9 @@ export class UserService {
             where: {
                 email: validatedData.email,
             },
+            select: {
+                id: true,
+            },
         })
 
         if (emailExists) {
@@ -35,6 +38,9 @@ export class UserService {
         if (request.user_id) {
             const existingUser = await prismaClient.user.findUnique({
                 where: { id: request.user_id },
+                include: { 
+                    avatar: true 
+                },
             })
 
             if (!existingUser || existingUser.role !== UserRole.GUEST) {
@@ -51,9 +57,12 @@ export class UserService {
                 where: {
                     id: request.user_id,
                 },
+                include: {
+                    avatar: true
+                },
             })
 
-            return toUserResponse(user.id, user.username, user.email, 1, user.image_url, user.role)
+            return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
         }
 
         // Jika tidak ada userId, create user baru
@@ -64,9 +73,12 @@ export class UserService {
                 image_url: "",
                 password: validatedData.password,
             },
+            include: {
+                avatar: true
+            },
         })
 
-        return toUserResponse(user.id, user.username, user.email, 1, user.image_url, user.role)
+       return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
     }
 
     static async login(request: LoginUserRequest): Promise<UserResponse> {
@@ -75,6 +87,9 @@ export class UserService {
         const user = await prismaClient.user.findFirst({
             where: {
                 email: validatedData.email,
+            },
+            include: {
+                avatar: true,
             },
         })
 
@@ -91,7 +106,7 @@ export class UserService {
             throw new ResponseError(400, "Invalid email or password!")
         }
 
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
+       return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
     }
 
     static async guest(request: Request) : Promise<UserResponse> {
@@ -103,19 +118,25 @@ export class UserService {
                 image_url: "",
                 role: UserRole.GUEST,
             },
+            include: {
+                avatar: true
+            },
         })
 
-        return toUserResponse(user.id, user.username, user.email, 1, user.image_url, user.role)
+        return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
     }
 
     static async getUserById(user_id: number): Promise<UserResponse> {
         const user = await prismaClient.user.findUnique({
-            where: { id: user_id }, include: { avatar: true },
+            where: { id: user_id }, 
+            include: {
+                avatar: true 
+            },
         })
         if (!user) {
             throw new ResponseError(404, "User not found")
         }
-        return toUserResponse(user.id, user.username, user.email, user.avatar_id, user.image_url, user.role)
+        return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
     }
 
     static async updateUserById(
@@ -133,12 +154,18 @@ export class UserService {
 
         const user = await prismaClient.user.findUnique({
             where: { id: user_id },
+            include: { 
+                avatar: true 
+            },
         })
         if (!user) {
             throw new ResponseError(404, "User not found")
         }
         const updatedUser = await prismaClient.user.update({
             where: { id: user_id },
+            include: {
+                avatar: true
+            },
             data: {
                 username: validatedData.username || user.username,
                 email: validatedData.email || user.email,
@@ -146,6 +173,6 @@ export class UserService {
                 avatar_id: validatedData.avatar_id || user.avatar_id,
             },
         })
-        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.avatar_id, updatedUser.image_url, updatedUser.role)
+        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.image_url, updatedUser.role, updatedUser.avatar)
     }
 }

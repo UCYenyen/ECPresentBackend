@@ -12,7 +12,6 @@ export class UserController {
         try {
             const request: RegisterUserRequest = req.body as RegisterUserRequest
             const response: UserResponse = await UserService.register(request)
-
             res.status(200).json({
                 data: response,
             })
