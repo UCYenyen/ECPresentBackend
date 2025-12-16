@@ -135,9 +135,9 @@ model Feedback {
   posture           Float
 
   video_score       Float
-  audio_score       Float
-  overall_rating    Float
-  grade             String
+  audio_score       Float?
+  overall_rating    Float?
+  grade             String?
   
   video_suggestion  String       @db.Text
   audio_suggestion  String?      @db.Text
