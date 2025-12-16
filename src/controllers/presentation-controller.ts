@@ -88,8 +88,7 @@ export class PresentationController {
             const response = await PresentationService.submitAnswer(
                 presentationId, 
                 req.file.path,
-                userId,
-                questionText
+                userId
             )
 
             res.status(201).json({
