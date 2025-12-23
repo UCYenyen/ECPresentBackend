@@ -65,6 +65,7 @@ export interface FinalFeedbackResponse {
   audio_suggestion: string | null
   question: string
   audio_url: string | null 
+  personaL_notes?: string
   status: string
 }
 

@@ -81,7 +81,6 @@ export class PresentationController {
             if (!userId) throw new ResponseError(401, "Unauthorized")
 
             const presentationId = PresentationController.validateId(req.params.presentationId)
-            
             const response = await PresentationService.submitAnswer(
                 presentationId, 
                 req.file.path,
