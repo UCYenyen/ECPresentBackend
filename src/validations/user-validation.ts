@@ -81,4 +81,8 @@ export class UserValidation {
       })
       .optional(),
   });
+
+  static readonly GET_PROFILE: ZodType = z.object({
+        id: z.number({error: "Invalid user ID: the user you're looking for doesn't exist"}).min(1)
+    })
 }

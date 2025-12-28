@@ -62,23 +62,23 @@ export class UserService {
                 },
             })
 
-            return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
+            return toUserResponse(user.id, user.username, user.email, user.role, user.avatar)
         }
 
-        // Jika tidak ada userId, create user baru
         const user = await prismaClient.user.create({
             data: {
                 username: validatedData.username,
                 email: validatedData.email,
                 image_url: "",
                 password: validatedData.password,
+                role: UserRole.USER,
             },
             include: {
                 avatar: true
             },
         })
 
-       return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
+       return toUserResponse(user.id, user.username, user.email, user.role, user.avatar)
     }
 
     static async login(request: LoginUserRequest): Promise<UserResponse> {
@@ -106,7 +106,7 @@ export class UserService {
             throw new ResponseError(400, "Invalid email or password!")
         }
 
-       return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
+       return toUserResponse(user.id, user.username, user.email, user.role, user.avatar)
     }
 
     static async guest(request: Request) : Promise<UserResponse> {
@@ -123,12 +123,15 @@ export class UserService {
             },
         })
 
-        return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
+        return toUserResponse(user.id, user.username, user.email, user.role, user.avatar)
     }
 
     static async getUserById(user_id: number): Promise<UserResponse> {
+        const validatedData = Validation.validate(UserValidation.GET_PROFILE, {
+              id: user_id,
+        });
         const user = await prismaClient.user.findUnique({
-            where: { id: user_id }, 
+            where: { id: validatedData.id }, 
             include: {
                 avatar: true 
             },
@@ -136,7 +139,7 @@ export class UserService {
         if (!user) {
             throw new ResponseError(404, "User not found")
         }
-        return toUserResponse(user.id, user.username, user.email, user.image_url, user.role, user.avatar)
+        return toUserResponse(user.id, user.username, user.email, user.role, user.avatar)
     }
 
     static async updateUserById(
@@ -173,6 +176,6 @@ export class UserService {
                 avatar_id: validatedData.avatar_id || user.avatar_id,
             },
         })
-        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.image_url, updatedUser.role, updatedUser.avatar)
+        return toUserResponse(updatedUser.id, updatedUser.username, updatedUser.email, updatedUser.role, updatedUser.avatar)
     }
 }
