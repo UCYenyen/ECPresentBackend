@@ -252,7 +252,7 @@ export class PresentationService {
 
                 await tx.presentation.update({
                     where: { id: presentationId },
-                    data: { status: "COMPLETED" }
+                    data: { status: "ONGOING"}
                 })
             })
 
