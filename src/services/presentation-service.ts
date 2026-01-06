@@ -147,11 +147,11 @@ export class PresentationService {
         const formatScore = (score: number | null) => parseFloat((score || 0).toFixed(2));
 
         return {
-            data: {
-                averageIntonation: formatScore(aggregations._avg.intonation),
-                averageExpression: formatScore(aggregations._avg.expression),
-                averagePosture: formatScore(aggregations._avg.posture)
-            }
+        
+                average_intonation: formatScore(aggregations._avg.intonation),
+                average_expression: formatScore(aggregations._avg.expression),
+                average_posture: formatScore(aggregations._avg.posture)
+        
         }
     }
 

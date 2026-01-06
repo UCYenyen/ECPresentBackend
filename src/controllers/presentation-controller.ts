@@ -100,7 +100,7 @@ export class PresentationController {
         try {
             const userId = req.user?.id
             if (!userId) throw new ResponseError(401, "Unauthorized")
-
+            
             const response = await PresentationService.getAverageScores(userId)
             
             res.status(200).json({
