@@ -52,10 +52,10 @@ export const uploadAudio = multer({
     storage: storage,
     limits: { fileSize: 20 * 1024 * 1024 }, 
     fileFilter: (req, file, cb) => {
-        const allowedExtensions = ['.mp3', '.wav', '.ogg', '.aac']
+        const allowedExtensions = ['.mp3', '.wav', '.ogg', '.aac', '.m4a', '.mp4', '.mpeg_4']
         const fileExtension = path.extname(file.originalname).toLowerCase()
 
-        if (file.mimetype.startsWith('audio/') || allowedExtensions.includes(fileExtension)) {
+        if (file.mimetype.startsWith('audio') || allowedExtensions.includes(fileExtension)) {
             cb(null, true)
         } else {
             cb(new Error('Invalid file type. Only audio files are allowed.'))

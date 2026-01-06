@@ -21,7 +21,6 @@ export class PresentationValidation {
 
     static readonly SUBMIT_ANSWER: ZodType = z.object({
         presentationId: z.number().positive(),
-        audioPath: z.string().min(1),
-        questionText: z.string().min(1)
+        audioPath: z.string().min(1)
     })
 }
