@@ -128,6 +128,33 @@ export class PresentationService {
         }
     }
 
+    static async getAverageScores(userId: number) {
+        const validation = Validation.validate(PresentationValidation.GET_AVERAGE, 
+            { userId: userId })
+        const aggregations = await prismaClient.feedback.aggregate({
+            where: { 
+                presentation: {
+                    user_id: validation.userId
+                }
+            },
+            _avg: {
+                intonation: true,
+                expression: true,
+                posture: true
+            }
+        })
+        
+        const formatScore = (score: number | null) => parseFloat((score || 0).toFixed(2));
+
+        return {
+            data: {
+                averageIntonation: formatScore(aggregations._avg.intonation),
+                averageExpression: formatScore(aggregations._avg.expression),
+                averagePosture: formatScore(aggregations._avg.posture)
+            }
+        }
+    }
+
     static async getById(presentationId: number, userId: number): Promise<PresentationResponse> {
         const presentation = await this.checkOwnership(presentationId, userId)
         return toPresentationResponse(presentation)

@@ -23,4 +23,8 @@ export class PresentationValidation {
         presentationId: z.number().positive(),
         audioPath: z.string().min(1)
     })
+
+    static readonly GET_AVERAGE: ZodType = z.object({
+        userId: z.number().min(1)
+    })
 }

@@ -96,6 +96,21 @@ export class PresentationController {
         }
     }
 
+    static async getAverageScores(req: UserRequest, res: Response, next: NextFunction) {
+        try {
+            const userId = req.user?.id
+            if (!userId) throw new ResponseError(401, "Unauthorized")
+
+            const response = await PresentationService.getAverageScores(userId)
+            
+            res.status(200).json({
+                success: true,
+                data: response
+            })
+        } catch (error) {
+            next(error)
+        }
+    }
     static async getById(req: UserRequest, res: Response, next: NextFunction) {
         try {
             const userId = req.user?.id

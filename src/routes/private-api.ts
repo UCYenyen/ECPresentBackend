@@ -17,6 +17,7 @@ privateRouter.get("/get-user-avatar/:id", AvatarController.get)
 
 privateRouter.post("/presentations", uploadVideo.single('video'), PresentationController.create)
 privateRouter.get("/presentations", PresentationController.list)
+privateRouter.get("/presentations/average", PresentationController.getAverageScores)
 privateRouter.get("/presentations/:id", PresentationController.getById)
 privateRouter.get("/presentations/:presentationId/analysis", PresentationController.getAnalysis)
 privateRouter.get("/presentations/:presentationId/feedback", PresentationController.getFinalFeedback)
