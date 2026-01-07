@@ -24,8 +24,8 @@ export interface FeedbackResponse {
   posture: number
   video_score: number
   audio_score: number | null
-  overall_rating: number
-  grade: string
+  overall_rating: number | null
+  grade: string | null
   video_suggestion: string
   audio_suggestion: string | null
   createdAt: Date

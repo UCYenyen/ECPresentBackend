@@ -72,48 +72,6 @@ async function main() {
       { image_url: "../uploads/avatar3.jpg" },
     ],
   });
-
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@demo.com' },
-    update: {},
-    create: {
-      username: 'SuperAdmin',
-      email: 'admin@demo.com',
-      password: 'password_rahasia_hash_nanti', 
-      image_url: '',
-      role: UserRole.ADMIN,
-      avatar_id: 1, 
-    },
-  })
-  console.log("Seeding admin completed.");
-  
-  const hashedBryanPassword = await bcrypt.hash('12345678', 10)
-
-  await prisma.user.create({
-    data: {
-      username: 'bryan',
-      email: `bryan@gmail.com`,
-      password: hashedBryanPassword,
-      image_url: '',
-      role: UserRole.GUEST,
-      avatar_id: 1,
-    },  
-  })
-
-  const user = await prisma.user.upsert({
-    where: { email: 'user@demo.com' },
-    update: {},
-    create: {
-      username: 'JohnDoe',
-      email: 'user@demo.com',
-      password: 'password123',
-      image_url: '',
-      role: UserRole.USER,
-      avatar_id: 2,
-    },
-  })
-  console.log("Seeding user completed.");
-  console.log("Seeding completed.");
 }
 
 main()
