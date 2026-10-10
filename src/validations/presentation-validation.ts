@@ -27,4 +27,14 @@ export class PresentationValidation {
     static readonly GET_AVERAGE: ZodType = z.object({
         userId: z.number().min(1)
     })
+
+    static readonly CLIENT_METRICS: ZodType = z.object({
+        client_platform: z.string().max(50).optional(),
+        client_prepare_ms: z.number().int().nonnegative().optional(),
+        client_request_ms: z.number().int().nonnegative().optional(),
+        client_wait_ms: z.number().int().nonnegative().optional(),
+        client_total_ms: z.number().int().nonnegative().optional(),
+        client_poll_count: z.number().int().nonnegative().optional(),
+        client_outcome: z.string().max(50).optional()
+    })
 }

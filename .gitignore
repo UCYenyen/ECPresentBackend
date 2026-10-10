@@ -7,3 +7,8 @@ node_modules
 /src/generated/prisma
 .DS_Store
 /uploads
+
+# Data & video eksperimen
+/experiment/results
+/experiment/videos
+/experiment/academic_writing

@@ -1,10 +1,34 @@
-import { CreatePresentationRequest, PresentationAnalysisResponse, PresentationResponse, toPresentationResponse } from "../models/presentation-model"
+import { ClientMetricsRequest, CreatePresentationRequest, PresentationAnalysisResponse, PresentationResponse, VideoUploadMeta, toPresentationResponse } from "../models/presentation-model"
 import { prismaClient } from "../utils/database-util"
-import { analyzeVideoWithGemini, analyzeAudioAnswerWithGemini } from "../utils/gemini-util"
+import {
+    analyzeVideoWithGemini,
+    analyzeAudioAnswerWithGemini,
+    deleteGeminiFile,
+    GeminiFileRef,
+    VideoAnalysisOutcome,
+    QNA_MODEL_NAME,
+    VIDEO_MODEL_NAME
+} from "../utils/gemini-util"
 import { PresentationValidation } from "../validations/presentation-validation"
 import { Validation } from "../validations/validation"
 import { ResponseError } from "../error/response-error"
+import { PIPELINE_CONFIG } from "../utils/pipeline-config"
+import { ProcessingTracker } from "../utils/processing-tracker"
+import { PipelineError, isTimeoutError, toPipelineError } from "../utils/resilience-util"
 import fs from 'fs'
+
+// Pesan kegagalan yang aman ditampilkan ke user
+function toFailureReason(error: unknown): string {
+    if (!(error instanceof PipelineError)) return "The AI analysis failed. Please upload your video again."
+    if (error.isTimeout) return "The AI analysis took too long and was stopped. Please try again, or upload a shorter video."
+    switch (error.stage) {
+        case "UPLOAD": return "The video could not be sent to the AI service. Please check your connection and try again."
+        case "FILE_ACTIVE": return "The AI service could not process this video. Please try another video format."
+        case "GENERATE":
+        case "PARSE": return "The AI service is busy or returned an invalid result. Please try again in a moment."
+        default: return "The AI analysis failed. Please upload your video again."
+    }
+}
 
 export class PresentationService {
     private static async checkOwnership(presentationId: number, userId: number) {
@@ -21,7 +45,7 @@ export class PresentationService {
         return presentation
     }
 
-    static async create(request: CreatePresentationRequest, videoPath?: string): Promise<PresentationResponse> {
+    static async create(request: CreatePresentationRequest, videoPath?: string, meta?: VideoUploadMeta): Promise<PresentationResponse> {
         const validation = Validation.validate(PresentationValidation.CREATE, request)
         try {
             const presentation = await prismaClient.presentation.create({
@@ -34,7 +58,7 @@ export class PresentationService {
             })
 
             if (videoPath) {
-                this.processVideoWithGemini(presentation.id, videoPath).catch(err => {
+                this.processVideoWithGemini(presentation.id, videoPath, meta).catch(err => {
                     console.error("Background processing failed:", err)
                 })
             }
@@ -61,11 +85,43 @@ export class PresentationService {
             }
         })
 
+        const log = await prismaClient.processingLog.findFirst({
+            where: { presentation_id: presentation.id, kind: "VIDEO" },
+            orderBy: { id: "desc" },
+            select: { status: true, current_stage: true, upload_attempts: true, generate_attempts: true, pipeline_mode: true }
+        })
+
         return {
             status: presentation.status,
+            failure_reason: presentation.failure_reason,
             feedback: feedback,
-            question: question
+            question: question,
+            processing: log ? {
+                status: log.status,
+                stage: log.current_stage,
+                upload_attempts: log.upload_attempts,
+                generate_attempts: log.generate_attempts,
+                pipeline_mode: log.pipeline_mode
+            } : null
         }
+    }
+
+    static async saveClientMetrics(presentationId: number, userId: number, request: ClientMetricsRequest) {
+        const validation = Validation.validate(PresentationValidation.CLIENT_METRICS, request)
+        await this.checkOwnership(presentationId, userId)
+
+        const log = await prismaClient.processingLog.findFirst({
+            where: { presentation_id: presentationId, kind: "VIDEO" },
+            orderBy: { id: "desc" }
+        })
+        if (!log) throw new ResponseError(404, "Processing log not found for this presentation")
+
+        await prismaClient.processingLog.update({
+            where: { id: log.id },
+            data: validation
+        })
+
+        return { processing_log_id: log.id }
     }
     
     static async submitAnswer(
@@ -103,12 +159,42 @@ export class PresentationService {
             throw new ResponseError(400, "You have already answered this question.")
         }
 
+        const presentation = questionData.presentation
+        const reusableVideoFile: GeminiFileRef | undefined =
+            PIPELINE_CONFIG.reuseGeminiFileForQna && presentation.gemini_file_name && presentation.gemini_file_uri
+                ? {
+                    name: presentation.gemini_file_name,
+                    uri: presentation.gemini_file_uri,
+                    mimeType: presentation.gemini_file_mime || "video/mp4",
+                    expiresAt: presentation.gemini_file_expires_at ?? undefined
+                }
+                : undefined
+
+        // Durasi video presentasi ikut dicatat agar tahap ANSWER bisa dikelompokkan per durasi
+        const videoLog = await prismaClient.processingLog.findFirst({
+            where: { presentation_id: presentation.id, kind: "VIDEO" },
+            orderBy: { id: "desc" },
+            select: { video_duration_sec: true }
+        })
+        const tracker = await ProcessingTracker.start({
+            kind: "ANSWER",
+            presentationId: presentation.id,
+            sampleLabel: presentation.title,
+            fileSizeBytes: fs.existsSync(audioPath) ? fs.statSync(audioPath).size : undefined,
+            videoDurationSec: videoLog?.video_duration_sec ?? undefined,
+            model: QNA_MODEL_NAME
+        })
+
         try {
             const analysis = await analyzeAudioAnswerWithGemini(
                 validation.audioPath, 
                 questionData.question, 
-                questionData.presentation.video_url
+                tracker,
+                presentation.video_url,
+                reusableVideoFile
             )
+
+            await tracker.setStage("SAVING")
 
             const savedAnswer = await prismaClient.answer.create({
                 data: {
@@ -119,10 +205,22 @@ export class PresentationService {
                 }
             })
 
+            await tracker.finish(tracker.hasFailure ? "FALLBACK" : "SUCCESS")
+
+            // Jawaban hanya bisa dikirim sekali, jadi file video di Gemini tidak dibutuhkan lagi
+            if (reusableVideoFile) {
+                await deleteGeminiFile(reusableVideoFile.name)
+                await prismaClient.presentation.update({
+                    where: { id: presentation.id },
+                    data: { gemini_file_name: null, gemini_file_uri: null, gemini_file_mime: null, gemini_file_expires_at: null }
+                }).catch(() => {})
+            }
+
             return savedAnswer
 
         } catch (error) {
             console.error("Failed to analyze audio:", error)
+            await tracker.finish(isTimeoutError(error) ? "TIMEOUT" : "FAILED", toPipelineError(error, "SAVE"))
             if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath)
             throw new ResponseError(500, "AI Analysis failed")
         }
@@ -206,6 +304,10 @@ export class PresentationService {
         
         if (!presentation) throw new ResponseError(404, "Presentation not found or access denied")
 
+        if (presentation.gemini_file_name) {
+            await deleteGeminiFile(presentation.gemini_file_name)
+        }
+
         if (presentation.video_url && fs.existsSync(presentation.video_url)) {
             try {
                 fs.unlinkSync(presentation.video_url)
@@ -246,12 +348,31 @@ export class PresentationService {
 
     }
 
-    private static async processVideoWithGemini(presentationId: number, videoPath: string): Promise<void> {
+    private static async processVideoWithGemini(presentationId: number, videoPath: string, meta?: VideoUploadMeta): Promise<void> {
+        const tracker = await ProcessingTracker.start({
+            kind: "VIDEO",
+            presentationId,
+            sampleLabel: meta?.sampleLabel,
+            experimentLabel: meta?.experimentLabel,
+            fileSizeBytes: meta?.fileSizeBytes,
+            videoDurationSec: meta?.videoDurationSec,
+            mimeType: meta?.mimeType,
+            model: VIDEO_MODEL_NAME,
+            requestReceivedAt: meta?.requestReceivedAt,
+            fileStoredAt: meta?.fileStoredAt
+        })
+        let outcome: VideoAnalysisOutcome | undefined
+
         try {
             console.log(`[Background] Start analyzing presentation #${presentationId}`)
-            const analysis = await analyzeVideoWithGemini(videoPath)
+            outcome = await tracker.runWithDeadline(
+                PIPELINE_CONFIG.processingDeadlineMs,
+                () => analyzeVideoWithGemini(videoPath, tracker)
+            )
+            const { analysis, retainedFile } = outcome
 
-            await prismaClient.$transaction(async (tx) => {
+            await tracker.setStage("SAVING")
+            await tracker.timed("SAVE", 1, "save_ms", () => prismaClient.$transaction(async (tx) => {
                 await tx.feedback.create({
                     data: {
                         presentation_id: presentationId,
@@ -279,17 +400,27 @@ export class PresentationService {
 
                 await tx.presentation.update({
                     where: { id: presentationId },
-                    data: { status: "ONGOING"}
+                    data: {
+                        status: "ONGOING",
+                        gemini_file_name: retainedFile?.name,
+                        gemini_file_uri: retainedFile?.uri,
+                        gemini_file_mime: retainedFile?.mimeType,
+                        gemini_file_expires_at: retainedFile?.expiresAt
+                    }
                 })
-            })
+            }))
 
+            await tracker.finish(outcome.isFallback ? "FALLBACK" : "SUCCESS")
             console.log(`[Background] Success analyzing presentation #${presentationId}`)
         } catch (error) {
             console.error(`[Background] Failed analyzing presentation #${presentationId}:`, error)
+            const pipelineError = toPipelineError(error, "SAVE")
+            if (outcome?.retainedFile) await deleteGeminiFile(outcome.retainedFile.name)
+            await tracker.finish(pipelineError.isTimeout ? "TIMEOUT" : "FAILED", pipelineError)
             await prismaClient.presentation.update({
                 where: { id: presentationId },
-                data: { status: "FAILED" }
-            })
+                data: { status: "FAILED", failure_reason: toFailureReason(pipelineError) }
+            }).catch(e => console.error(`[Background] Failed to mark presentation #${presentationId} as FAILED:`, e))
         }
     }
 }

@@ -6,6 +6,28 @@ export interface CreatePresentationRequest {
   video_url: string
 }
 
+// Metadata upload video untuk pencatatan eksperimen
+export interface VideoUploadMeta {
+  requestReceivedAt?: Date
+  fileStoredAt: Date
+  fileSizeBytes: number
+  mimeType: string
+  videoDurationSec?: number
+  sampleLabel?: string
+  experimentLabel?: string
+}
+
+// Waktu yang diukur di sisi client (aplikasi Android / runner script)
+export interface ClientMetricsRequest {
+  client_platform?: string
+  client_prepare_ms?: number
+  client_request_ms?: number
+  client_wait_ms?: number
+  client_total_ms?: number
+  client_poll_count?: number
+  client_outcome?: string
+}
+
 export interface UpdatePresentationRequest {
     id: number
     title?: string
@@ -46,10 +68,20 @@ export interface PresentationResponse {
   updatedAt: Date
 }
 
+export interface ProcessingInfo {
+  status: string
+  stage: string | null
+  upload_attempts: number
+  generate_attempts: number
+  pipeline_mode: string
+}
+
 export interface PresentationAnalysisResponse {
   status: PresentationStatus
+  failure_reason: string | null
   feedback: Feedback | null
   question: (Question & { answer: Answer | null }) | null
+  processing: ProcessingInfo | null
 }
 
 export interface FinalFeedbackResponse {

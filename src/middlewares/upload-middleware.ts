@@ -1,6 +1,9 @@
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
+import { NextFunction, Response } from 'express'
+import { UserRequest } from '../models/user-model'
+import { MAX_VIDEO_SIZE_MB } from '../utils/env-util'
 
 
 const uploadDir = 'uploads/'
@@ -39,11 +42,17 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
     }
 }
 
+// Dicatat sebelum multer membaca body, untuk mengukur lama server menerima file dari client
+export const markRequestReceived = (req: UserRequest, res: Response, next: NextFunction) => {
+    req.receivedAt = new Date()
+    next()
+}
+
 export const uploadVideo = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 100 * 1024 * 1024 
+        fileSize: (Number(MAX_VIDEO_SIZE_MB) || 300) * 1024 * 1024 
     }
 })
 

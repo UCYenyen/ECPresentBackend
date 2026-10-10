@@ -77,16 +77,90 @@ model Presentation {
 
   personal_notes String?           @db.Text
 
+  // Alasan kegagalan yang bisa ditampilkan ke user (diisi saat status FAILED)
+  failure_reason String?           @db.Text
+
+  // Cache file video di Gemini File API, dipakai ulang saat analisis jawaban QnA (mode optimized)
+  gemini_file_name       String?
+  gemini_file_uri        String?
+  gemini_file_mime       String?
+  gemini_file_expires_at DateTime?
+
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
- 
-  user          User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  
-  question      Question? 
 
-  feedback      Feedback? 
+  user          User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  question      Question?
+
+  feedback      Feedback?
+
+  processingLogs ProcessingLog[]
 
   @@map("presentations")
+}
+
+// Satu baris = satu kali proses analisis Gemini (video atau jawaban audio).
+// Dipakai untuk eksperimen latensi & ketahanan, jadi baris tetap disimpan walau presentasinya dihapus.
+model ProcessingLog {
+  id                    Int       @id @default(autoincrement())
+  presentation_id       Int?
+
+  kind                  String    // VIDEO | ANSWER
+  pipeline_mode         String    // baseline | optimized
+  experiment_label      String?
+  sample_label          String?
+
+  file_size_bytes       Int?
+  video_duration_sec    Float?
+  mime_type             String?
+  model                 String?
+
+  status                String    @default("RUNNING") // RUNNING | SUCCESS | FALLBACK | FAILED | TIMEOUT
+  current_stage         String?
+  failure_stage         String?
+  error_message         String?   @db.Text
+
+  request_received_at   DateTime?
+  processing_started_at DateTime?
+  finished_at           DateTime?
+
+  server_receive_ms     Int?      // lama server menerima body multipart dari client
+  queue_ms              Int?      // file tersimpan -> proses background mulai
+  gemini_upload_ms      Int?
+  file_active_ms        Int?
+  generate_ms           Int?
+  save_ms               Int?
+  processing_ms         Int?      // proses background mulai -> selesai
+  total_ms              Int?      // request diterima -> selesai
+
+  upload_attempts       Int       @default(0)
+  generate_attempts     Int       @default(0)
+  active_poll_count     Int       @default(0)
+  injected_faults       Int       @default(0)
+  used_inline           Boolean   @default(false)
+  reused_gemini_file    Boolean   @default(false)
+
+  // Dilaporkan oleh client (aplikasi Android / runner script)
+  client_platform       String?
+  client_prepare_ms     Int?
+  client_request_ms     Int?
+  client_wait_ms        Int?
+  client_total_ms       Int?
+  client_poll_count     Int?
+  client_outcome        String?
+
+  attempts              Json?     // detail tiap percobaan per tahap
+  config                Json?     // snapshot konfigurasi pipeline saat run
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  presentation          Presentation? @relation(fields: [presentation_id], references: [id], onDelete: SetNull)
+
+  @@index([presentation_id])
+  @@index([pipeline_mode, kind])
+  @@map("processing_logs")
 }
 
 model Question {

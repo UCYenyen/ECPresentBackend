@@ -5,6 +5,8 @@ import { PORT } from './utils/env-util';
 import { publicRouter } from './routes/public-api';
 import { errorMiddleware } from './middlewares/error-middleware';
 import { privateRouter } from './routes/private-api';
+import { describePipelineConfig } from './utils/pipeline-config';
+import { startStaleProcessingSweeper } from './utils/processing-tracker';
 
 const app = express();
 app.use(cors());
@@ -20,5 +22,7 @@ const port = Number(PORT) || 3000;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
     console.log(`url: http://localhost:${port}`)
+    console.log(`[Pipeline] ${describePipelineConfig()}`)
+    startStaleProcessingSweeper()
 })
 

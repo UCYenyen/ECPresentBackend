@@ -43,6 +43,7 @@ export interface UserResponse {
 
 export interface UserRequest extends Request {
   user?: UserJWTPayload;
+  receivedAt?: Date;
 }
 
 export interface AvatarResponse {
